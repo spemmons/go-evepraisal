@@ -175,10 +175,13 @@ func (db *AppraisalDB) LatestAppraisals(reqCount int, kind string) ([]evepraisal
 				return err
 			}
 
+			if appraisal.Private {
+				continue
+			}
+
 			if kind != "" && appraisal.Kind != kind {
 				continue
 			}
-			appraisal.User = nil
 
 			appraisals = append(appraisals, appraisal)
 
@@ -216,7 +219,6 @@ func (db *AppraisalDB) LatestAppraisalsByUser(user evepraisal.User, reqCount int
 			if kind != "" && appraisal.Kind != kind {
 				continue
 			}
-			appraisal.User = nil
 
 			appraisals = append(appraisals, appraisal)
 
