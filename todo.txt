@@ -10,6 +10,3 @@ TODO:
 Weird results to look into:
  - Looks like it's an asset list: https://evepraisal.com/a/bwpy0.raw
 
-make db/ path part of the repository and ignore contents
-make types-sde-...zip valid on download
-
