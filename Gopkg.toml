@@ -1,6 +1,5 @@
 [metadata.heroku]
   root-package = "github.com/evepraisal/go-evepraisal"
-  go-version = "1.9"
 
 [[constraint]]
   branch = "master"
