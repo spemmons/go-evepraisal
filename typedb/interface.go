@@ -21,6 +21,7 @@ type EveType struct {
 	BlueprintProducts []Component `json:"blueprint_products,omitempty"`
 	Components        []Component `json:"components,omitempty"`
 	BaseComponents    []Component `json:"base_components,omitempty"`
+	Materials		  []Component `json:"materials,omitempty"`
 }
 
 type Component struct {

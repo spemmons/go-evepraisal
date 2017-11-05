@@ -147,6 +147,12 @@ type Blueprint struct {
 	}
 }
 
+type MaterialType struct {
+	MaterialID 	int64 `yaml:"materialTypeID"`
+	Quantity 	int64
+	TypeID 		int64 `yaml:"typeID"`
+}
+
 func loadtypes(staticDataPath string) ([]typedb.EveType, error) {
 	r, err := zip.OpenReader(staticDataPath)
 	if err != nil {
@@ -180,6 +186,22 @@ func loadtypes(staticDataPath string) ([]typedb.EveType, error) {
 		}
 	}
 
+	var allMaterials []MaterialType
+	err = loadDataFromZipFile(r, "sde/bsd/invTypeMaterials.yaml", &allMaterials)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Loaded %d materials", len(allMaterials))
+
+	materialsByType := make(map[int64][]typedb.Component)
+	for _, material := range allMaterials {
+		materials, ok := materialsByType[material.TypeID]
+		if !ok {
+			materials = []typedb.Component{}
+		}
+		materialsByType[material.TypeID] = append(materials,typedb.Component{material.Quantity, material.MaterialID})
+	}
+
 	types := make([]typedb.EveType, 0)
 	for typeID, t := range allTypes {
 
@@ -198,6 +220,7 @@ func loadtypes(staticDataPath string) ([]typedb.EveType, error) {
 			BlueprintProducts: resolveBlueprintProducts(blueprintsByProductType, typeID),
 			Components:        resolveComponents(blueprintsByProductType, typeID),
 			BaseComponents:    flattenComponents(resolveBaseComponents(blueprintsByProductType, typeID, 1, 5)),
+			Materials:		   materialsByType[typeID],
 		}
 		types = append(types, eveType)
 	}

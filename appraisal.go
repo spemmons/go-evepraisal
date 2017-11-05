@@ -486,9 +486,9 @@ func filterUnparsed(unparsed map[int]string) map[int]string {
 	return unparsed
 }
 
-func priceByComponents(t typedb.EveType, priceDB PriceDB, market string) Prices {
+func priceByComponents(components []typedb.Component, priceDB PriceDB, market string) Prices {
 	var prices Prices
-	for _, component := range t.Components {
+	for _, component := range components {
 		p, ok := priceDB.GetPrice(market, component.TypeID)
 		if !ok {
 			continue
