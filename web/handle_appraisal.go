@@ -26,7 +26,15 @@ var (
 // AppraisalPage contains data used on the appraisal page
 type AppraisalPage struct {
 	Appraisal *evepraisal.Appraisal `json:"appraisal"`
+	Original AppraisalInfo
+	Buyback AppraisalInfo
 	ShowFull  bool                  `json:"show_full,omitempty"`
+}
+
+type AppraisalInfo struct {
+	Items *[]evepraisal.AppraisalItem
+	Totals *evepraisal.Totals
+	ShowFull bool
 }
 
 func parseAppraisalBody(r *http.Request) (string, error) {
@@ -138,7 +146,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	// Render the new appraisal to the screen (there is no redirect here, we set the URL using javascript later)
 	w.Header().Add("X-Appraisal-ID", appraisal.ID)
-	ctx.render(r, w, "appraisal.html", AppraisalPage{Appraisal: appraisal})
+	ctx.render(r, w, "appraisal.html", appraisalToPage(appraisal, false))
 }
 
 // HandleViewAppraisal is the handler for /a/[id]
@@ -181,5 +189,13 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		return appraisal.Items[i].RepresentativePrice() > appraisal.Items[j].RepresentativePrice()
 	})
 
-	ctx.render(r, w, "appraisal.html", AppraisalPage{Appraisal: appraisal, ShowFull: r.FormValue("full") != ""})
+	ctx.render(r, w, "appraisal.html", appraisalToPage(appraisal, r.FormValue("full") != ""))
+}
+
+func appraisalToPage(appraisal *evepraisal.Appraisal, showFull bool) AppraisalPage {
+	return AppraisalPage{
+		Appraisal: appraisal,
+		Original: AppraisalInfo{&appraisal.Items, &appraisal.Totals, showFull},
+		Buyback:  AppraisalInfo{&appraisal.Buyback.Items, &appraisal.Buyback.Totals, showFull},
+		ShowFull: showFull}
 }
