@@ -1,6 +1,7 @@
 [metadata.heroku]
   root-package = "github.com/evepraisal/go-evepraisal"
   install = [ "./evepraisal" ]
+  ensure = "true"
 
 [[constraint]]
   branch = "master"
