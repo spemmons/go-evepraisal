@@ -1,6 +1,5 @@
 [metadata.heroku]
   root-package = "github.com/evepraisal/go-evepraisal"
-  heroku.additionalTools = ["github.com/golang/dep/cmd/dep", "github.com/jteeuwen/go-bindata/...", "github.com/cespare/reflex", "vendor/..."]
   install = [ "./evepraisal" ]
   ensure = "true"
 
