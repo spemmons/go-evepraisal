@@ -1,0 +1,55 @@
+<table id="results" class="table table-sm table-condensed table-striped results-table">
+    <thead>
+    <tr class="header">
+        <th>Item</th>
+        <th class="text-right">Qty</th>
+        <th class="text-right"><span class="nowrap">Jita Price (buy)</span></th>
+        <th class="text-right"><span class="nowrap">Buyback %</span></th>
+        <th class="text-right"><span class="nowrap">Buyback Total</span></th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range $i, $item := .Items}}
+    {{ if (or $.ShowFull (lt $i 100)) }}
+    <tr>
+        <td nowrap>
+            {{if (and $item.TypeName (lt $i 30))}}
+            <a href="/item/{{$item.TypeID}}">
+                <img class="pull-left media-object" src="https://image.eveonline.com/Type/{{$item.TypeID}}_32.png" alt="{{$item.TypeName}}">
+            </a>
+            {{end}}
+            <a href="/item/{{$item.TypeID}}">
+                {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}
+            </a>
+        </td>
+        <td class="numeric-cell text-right" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
+        <td class="numeric-cell text-right" data-sort-value="-{{$item.Prices.Buy.Max | printf "%f"}}">
+            {{commaf $item.Prices.Buy.Max}}
+        </td>
+        <td class="numeric-cell text-right" data-sort-value="-{{$item.PriceAdjustment | printf "%2.0f"}}">
+            {{$item.PriceAdjustment | printf "%2.0f"}}%
+        </td>
+        <td class="numeric-cell text-right" data-sort-value="-{{$item.BuyTotal | printf "%f"}}">
+            {{commaf $item.AdjustedBuyTotal}}
+        </td>
+    </tr>
+    {{end}}
+    {{end}}
+    </tbody>
+    <tfoot>
+    {{if (and (not $.ShowFull) (ge (len .Items) 100))}}
+    <tr>
+        <td class="text-center bg-warning text-white" colspan="6">There are too many results to show. <a href="/a/{{.ID}}?full=true">Click here to see all <strong>{{.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
+    </tr>
+    {{end}}
+    <tr>
+        <td></td>
+        <td colspan="3" class="text-right">Total Volume:<br/>
+            Total Buyback Offer:</td>
+        <td class="text-right">{{commaf .Totals.Volume}}<br/>
+            {{commaf .Totals.Buy}}
+        </td>
+        <td></td>
+    </tr>
+    </tfoot>
+</table>

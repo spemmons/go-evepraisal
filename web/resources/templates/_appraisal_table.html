@@ -22,8 +22,10 @@
             &nbsp;
             {{end}}
             <a href="/item/{{$item.TypeID}}">
-                {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)</a>
-            <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}
+                {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}
+                {{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}
+                {{if (ne $item.PriceAdjustment 0.0)}}({{ $item.PriceAdjustment | printf "%2.0f" }}%){{end}}
+            </a>
         </td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">

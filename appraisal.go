@@ -21,12 +21,6 @@ type Totals struct {
 	Volume float64 `json:"volume"`
 }
 
-type Buyback struct {
-	Totals Totals			`json:"totals"`
-	Items  []AppraisalItem 	`json:"items,omitempty"`
-}
-
-
 type Appraisal struct {
 	ID         string          `json:"id"`
 	Created    int64           `json:"created"`
@@ -51,6 +45,7 @@ type AppraisalItem struct {
 	TypeVolume float64 `json:"typeVolume"`
 	Quantity   int64   `json:"quantity"`
 	Prices     Prices  `json:"prices"`
+	PriceAdjustment float64
 	Rejected   bool
 	Extra      struct {
 		Fitted     bool    `json:"fitted,omitempty"`
@@ -72,6 +67,14 @@ func (i AppraisalItem) SellTotal() float64 {
 
 func (i AppraisalItem) BuyTotal() float64 {
 	return float64(i.Quantity) * i.Prices.Buy.Max
+}
+
+func (i AppraisalItem) AdjustedBuyTotal() float64 {
+	if i.PriceAdjustment == 0.0 {
+		return i.BuyTotal()
+	}
+
+	return float64(i.Quantity) * i.Prices.Buy.Max * (i.PriceAdjustment / 100.0)
 }
 
 func (i AppraisalItem) SellISKVolume() float64 {
@@ -296,15 +299,9 @@ func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
 	appraisal.Items = parserResultToAppraisalItems(result)
 	app.priceAppraisalItems(appraisal.Items, &appraisal.Totals, market)
 
-	appraisal.Buyback = app.calculateBuyback(appraisal.Items, market)
+	appraisal.Buyback = app.calculateBuyback(appraisal.Items)
 
 	return appraisal, nil
-}
-
-func (app *App) calculateBuyback(items []AppraisalItem, market string) (buyback Buyback) {
-	buyback.Items = items
-	app.priceAppraisalItems(buyback.Items, &buyback.Totals, market)
-	return
 }
 
 func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, market string) {
@@ -322,7 +319,7 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 			items[i].TypeVolume = t.Volume
 		}
 
-		items[i].Rejected = !ableToBuyback(t)
+		items[i].Rejected = !app.ableToBuyback(t)
 		if items[i].Rejected {
 			continue
 		}
@@ -331,29 +328,13 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 		if err != nil {
 			continue
 		}
+
 		items[i].Prices = prices
-		totals.Buy += prices.Buy.Max * float64(items[i].Quantity)
-		totals.Sell += prices.Sell.Min * float64(items[i].Quantity)
+
+		totals.Buy += items[i].AdjustedBuyTotal()
+		totals.Sell += items[i].SellTotal()
 		totals.Volume += items[i].TypeVolume * float64(items[i].Quantity)
 	}
-}
-
-func ableToBuyback(t typedb.EveType) bool {
-	if (isMineral(t.ID)) {
-		return true
-	}
-
-	for _, material := range t.Materials {
-		if !isMineral(material.TypeID) {
-			return false
-		}
-	}
-
-	return len(t.Materials) > 0
-}
-
-func isMineral(typeID int64) bool {
-	return true
 }
 
 func findKind(result parsers.ParserResult) (string, error) {
@@ -527,9 +508,9 @@ func filterUnparsed(unparsed map[int]string) map[int]string {
 	return unparsed
 }
 
-func priceByComponents(components []typedb.Component, priceDB PriceDB, market string) Prices {
+func priceByComponents(t typedb.EveType, priceDB PriceDB, market string) Prices {
 	var prices Prices
-	for _, component := range components {
+	for _, component := range t.Components {
 		p, ok := priceDB.GetPrice(market, component.TypeID)
 		if !ok {
 			continue

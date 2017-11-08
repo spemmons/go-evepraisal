@@ -1,4 +1,4 @@
-{{define "title"}}Evepraisal - Appraisal Result {{.Page.Appraisal.ID}} [{{.Page.Appraisal.Kind}}]{{end}}
+{{define "title"}}IP Buyback - Appraisal Result {{.Page.Appraisal.ID}} [{{.Page.Appraisal.Kind}}]{{end}}
 
 {{define "content"}}
 <div class="row">
@@ -28,6 +28,14 @@
     </div>
 
     <div>
+      <h4>
+        <span class="nowrap">{{ prettybignumber .Page.Buyback.Totals.Buy }} <small>Buyback Offer for Reprocessed/Refined Minerals</small></span>
+      </h4>
+    </div>
+
+    {{template "_buyback_table.html" .Page.Buyback }}
+
+    <div>
       <p class="text-left"><strong>{{.Page.Appraisal.Kind}}</strong> priced in <strong>{{.Page.Appraisal.MarketName}}</strong> {{relativetime .Page.Appraisal.CreatedTime}}</p>
     </div>
 
@@ -39,8 +47,6 @@
     </div>
 
     {{template "_appraisal_table.html" .Page.Original }}
-
-    {{template "_appraisal_table.html" .Page.Buyback }}
 
     <script type="text/javascript">
       window.history.replaceState({}, "", "/a/{{.Page.Appraisal.ID}}");

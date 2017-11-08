@@ -30,6 +30,7 @@
 // resources/static/thirdparty/typeahead.js/typeahead.jquery.js
 // resources/static/thirdparty/typeahead.js/typeahead.jquery.min.js
 // resources/templates/_appraisal_table.html
+// resources/templates/_buyback_table.html
 // resources/templates/_layout.html
 // resources/templates/_paste-panel.html
 // resources/templates/_view_item_ccp.html
@@ -614,6 +615,24 @@ func templates_appraisal_tableHtml() (*asset, error) {
 	return a, err
 }
 
+// templates_buyback_tableHtml reads file data from disk. It returns an error on failure.
+func templates_buyback_tableHtml() (*asset, error) {
+	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/_buyback_table.html"
+	name := "templates/_buyback_table.html"
+	bytes, err := bindataRead(path, name)
+	if err != nil {
+		return nil, err
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
+	}
+
+	a := &asset{bytes: bytes, info: fi}
+	return a, err
+}
+
 // templates_layoutHtml reads file data from disk. It returns an error on failure.
 func templates_layoutHtml() (*asset, error) {
 	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/_layout.html"
@@ -1020,6 +1039,7 @@ var _bindata = map[string]func() (*asset, error){
 	"static/thirdparty/typeahead.js/typeahead.jquery.js": staticThirdpartyTypeaheadJsTypeaheadJqueryJs,
 	"static/thirdparty/typeahead.js/typeahead.jquery.min.js": staticThirdpartyTypeaheadJsTypeaheadJqueryMinJs,
 	"templates/_appraisal_table.html": templates_appraisal_tableHtml,
+	"templates/_buyback_table.html": templates_buyback_tableHtml,
 	"templates/_layout.html": templates_layoutHtml,
 	"templates/_paste-panel.html": templates_pastePanelHtml,
 	"templates/_view_item_ccp.html": templates_view_item_ccpHtml,
@@ -1125,6 +1145,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	}},
 	"templates": &bintree{nil, map[string]*bintree{
 		"_appraisal_table.html": &bintree{templates_appraisal_tableHtml, map[string]*bintree{}},
+		"_buyback_table.html": &bintree{templates_buyback_tableHtml, map[string]*bintree{}},
 		"_layout.html": &bintree{templates_layoutHtml, map[string]*bintree{}},
 		"_paste-panel.html": &bintree{templates_pastePanelHtml, map[string]*bintree{}},
 		"_view_item_ccp.html": &bintree{templates_view_item_ccpHtml, map[string]*bintree{}},
