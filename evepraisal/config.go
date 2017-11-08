@@ -1,10 +1,18 @@
 package main
 
-import "github.com/spf13/viper"
+import (
+	"os"
+	"github.com/spf13/viper"
+)
 
 func init() {
-	viper.SetDefault("base-url", "http://127.0.0.1:8080")
-	viper.SetDefault("http_addr", ":8080")
+	port, present := os.LookupEnv("PORT")
+	if !present {
+		port = "8080"
+	}
+
+	viper.SetDefault("base-url", "http://127.0.0.1:" + port)
+	viper.SetDefault("http_addr", ":" + port)
 	viper.SetDefault("https_addr", "")
 	viper.SetDefault("https_domain-whitelist", []string{"evepraisal.com"})
 	viper.SetDefault("letsencrypt_email", "")
