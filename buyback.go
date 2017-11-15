@@ -2,6 +2,8 @@ package evepraisal
 
 import (
 	"github.com/evepraisal/go-evepraisal/typedb"
+	"sort"
+	"fmt"
 )
 
 type Buyback struct {
@@ -10,36 +12,43 @@ type Buyback struct {
 }
 
 func (app *App) calculateBuyback(items []AppraisalItem) (buyback Buyback) {
-	buyback.Items = make([]AppraisalItem, 0)
-	buybackMap := make(map[int64]*AppraisalItem)
+	buybackMap := make(map[string]*AppraisalItem)
 	for _, item := range items {
 		if !item.Rejected {
-			app.collectBuybackItems(&buyback, buybackMap, item.TypeID, item.Quantity)
+			app.collectBuybackItems(buybackMap, "", 100, item.TypeID, item.Quantity)
 		}
 	}
+
+	buyback.Items = make([]AppraisalItem, 0, len(buybackMap))
+	for _, item := range buybackMap {
+		buyback.Items = append(buyback.Items, *item)
+	}
+
+	sort.Sort(ByQuantity(buyback.Items))
+
 	app.priceAppraisalItems(buyback.Items, &buyback.Totals, "jita")
 	return
 }
 
-func (app *App) collectBuybackItems(buyback *Buyback, buybackMap map[int64]*AppraisalItem, typeID int64, quantity int64) {
+func (app *App) collectBuybackItems(buybackMap map[string]*AppraisalItem, qualifier string, adjustment float64, typeID int64, quantity int64) {
 	t, _ := app.TypeDB.GetTypeByID(typeID)
 
 	if t.GroupID == MineralGroupID {
-		app.updateBuybackItems(buyback, buybackMap, t, quantity)
+		app.updateBuybackItems(buybackMap, qualifier, adjustment, t, quantity)
 	} else {
+		fmt.Printf("Q: %v TYPE: %+v", qualifier, t)
 		for _, material := range t.Materials {
-			app.collectBuybackItems(buyback, buybackMap, material.TypeID, material.Quantity * quantity)
+			app.collectBuybackItems(buybackMap, " (refined)", 85, material.TypeID, material.Quantity * quantity)
 		}
 	}
 }
 
-func (app *App) updateBuybackItems(buyback *Buyback, buybackMap map[int64]*AppraisalItem, t typedb.EveType, quantity int64) {
-	if component, exists := buybackMap[t.ID]; exists {
+func (app *App) updateBuybackItems(buybackMap map[string]*AppraisalItem, qualifier string, adjustment float64, t typedb.EveType, quantity int64) {
+	buybackKey := t.Name + qualifier
+	if component, exists := buybackMap[buybackKey]; exists {
 		component.Quantity += quantity
 	} else {
-		lastItem := len(buyback.Items)
-		buyback.Items = append(buyback.Items, AppraisalItem{Name: t.Name, Quantity: quantity, TypeID: t.ID, PriceAdjustment: 85})
-		buybackMap[t.ID] = &buyback.Items[lastItem]
+		buybackMap[buybackKey] = &AppraisalItem{Name: buybackKey, Quantity: quantity, TypeID: t.ID, PriceAdjustment: adjustment}
 	}
 }
 
@@ -59,3 +68,9 @@ func (app *App) ableToBuyback(t typedb.EveType) bool {
 
 	return len(t.Materials) > 0
 }
+
+type ByQuantity []AppraisalItem
+
+func (a ByQuantity) Len() int           { return len(a) }
+func (a ByQuantity) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByQuantity) Less(i, j int) bool { return a[i].Quantity > a[j].Quantity }
