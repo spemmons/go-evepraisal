@@ -33,19 +33,38 @@ type ItemsAndTotals struct {
 }
 
 type Appraisal struct {
-	ID         string          `json:"id"`
-	Created    int64           `json:"created"`
-	Kind       string          `json:"kind"`
-	MarketName string          `json:"market_name"`
-	Original   ItemsAndTotals  `json:"original"`
-	Buyback    ItemsAndTotals  `json:"buyback"`
-	Raw        string          `json:"raw"`
-	Unparsed   map[int]string  `json:"unparsed"`
-	User       *User           `json:"user,omitempty"`
+	ID           string          `json:"id,omitempty"`
+	Created      int64           `json:"created"`
+	Kind         string          `json:"kind"`
+	MarketName   string          `json:"market_name"`
+	Original     ItemsAndTotals  `json:"original"`
+	Buyback      ItemsAndTotals  `json:"buyback"`
+	Raw          string          `json:"raw"`
+	Unparsed     map[int]string  `json:"unparsed"`
+	User         *User           `json:"user,omitempty"`
+	Private      bool            `json:"private"`
+	PrivateToken string          `json:"private_token,omitempty"`
 }
 
 func (appraisal *Appraisal) CreatedTime() time.Time {
 	return time.Unix(appraisal.Created, 0)
+}
+
+func (appraisal *Appraisal) String() string {
+	appraisalID := appraisal.ID
+	if appraisalID == "" {
+		appraisalID = "-"
+	}
+	s := fmt.Sprintf(
+		"[Appraisal] id=%s, market=%s, kind=%s, items=%d, unparsed=%d",
+		appraisalID, appraisal.MarketName, appraisal.Kind, len(appraisal.Items), len(appraisal.Unparsed))
+	if appraisal.User != nil {
+		s += ", user=" + appraisal.User.CharacterName
+	}
+	if appraisal.Private {
+		s += ", private"
+	}
+	return s
 }
 
 type AppraisalItem struct {

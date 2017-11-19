@@ -1,3 +1,15 @@
+.nowrap {
+  white-space: nowrap;
+}
+
+.paste-panel-heading {
+  padding-bottom: 0;
+}
+
+.appraisal-options div {
+  margin-bottom: 5px;
+}
+
 .results-table th {
   cursor: pointer;
   padding: 0px;
