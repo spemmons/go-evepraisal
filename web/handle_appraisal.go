@@ -26,15 +26,7 @@ var (
 // AppraisalPage contains data used on the appraisal page
 type AppraisalPage struct {
 	Appraisal *evepraisal.Appraisal `json:"appraisal"`
-	Original AppraisalInfo
-	Buyback AppraisalInfo
 	ShowFull  bool                  `json:"show_full,omitempty"`
-}
-
-type AppraisalInfo struct {
-	Items *[]evepraisal.AppraisalItem
-	Totals *evepraisal.Totals
-	ShowFull bool
 }
 
 func parseAppraisalBody(r *http.Request) (string, error) {
@@ -135,13 +127,13 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 	if user != nil {
 		username = user.CharacterName
 	}
-	log.Printf("[New appraisal] id=%s, market=%s, items=%d, unparsed=%d, user=%s", appraisal.ID, appraisal.MarketName, len(appraisal.Items), len(appraisal.Unparsed), username)
+	log.Printf("[New appraisal] id=%s, market=%s, items=%d, unparsed=%d, user=%s", appraisal.ID, appraisal.MarketName, len(appraisal.Original.Items), len(appraisal.Unparsed), username)
 
 	// Set new session variable
 	ctx.setDefaultMarket(r, w, market)
 
-	sort.Slice(appraisal.Items, func(i, j int) bool {
-		return appraisal.Items[i].RepresentativePrice() > appraisal.Items[j].RepresentativePrice()
+	sort.Slice(appraisal.Original.Items, func(i, j int) bool {
+		return appraisal.Original.Items[i].RepresentativePrice() > appraisal.Original.Items[j].RepresentativePrice()
 	})
 
 	// Render the new appraisal to the screen (there is no redirect here, we set the URL using javascript later)
@@ -185,8 +177,8 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	sort.Slice(appraisal.Items, func(i, j int) bool {
-		return appraisal.Items[i].RepresentativePrice() > appraisal.Items[j].RepresentativePrice()
+	sort.Slice(appraisal.Original.Items, func(i, j int) bool {
+		return appraisal.Original.Items[i].RepresentativePrice() > appraisal.Original.Items[j].RepresentativePrice()
 	})
 
 	ctx.render(r, w, "appraisal.html", appraisalToPage(appraisal, r.FormValue("full") != ""))
@@ -195,7 +187,5 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 func appraisalToPage(appraisal *evepraisal.Appraisal, showFull bool) AppraisalPage {
 	return AppraisalPage{
 		Appraisal: appraisal,
-		Original: AppraisalInfo{&appraisal.Items, &appraisal.Totals, showFull},
-		Buyback:  AppraisalInfo{&appraisal.Buyback.Items, &appraisal.Buyback.Totals, showFull},
 		ShowFull: showFull}
 }

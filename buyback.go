@@ -1,58 +1,68 @@
 package evepraisal
 
 import (
-	"github.com/evepraisal/go-evepraisal/typedb"
 	"sort"
-	"fmt"
+	"github.com/evepraisal/go-evepraisal/typedb"
 )
 
-type Buyback struct {
-	Totals Totals			`json:"totals"`
-	Items  []AppraisalItem 	`json:"items,omitempty"`
-}
-
-func (app *App) calculateBuyback(items []AppraisalItem) (buyback Buyback) {
+func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems []AppraisalItem, buyback ItemsAndTotals) {
 	buybackMap := make(map[string]*AppraisalItem)
-	for _, item := range items {
+
+	modifiedItems = make([]AppraisalItem,0,len(originalItems))
+	for _, item := range originalItems {
 		if !item.Rejected {
-			app.collectBuybackItems(buybackMap, "", 100, item.TypeID, item.Quantity)
+			itemMap := make(map[string]*AppraisalItem)
+			item.Qualifier, item.Efficiency = app.collectBuybackItems(itemMap, "", 100, item.TypeID, item.Quantity)
+			item.Buyback.Items = make([]AppraisalItem, 0, len(itemMap))
+			for _, bbitem := range itemMap {
+				item.Buyback.Items = append(item.Buyback.Items, *bbitem)
+				app.updateBuybackItems(buybackMap, "", 100, bbitem.Name, bbitem.TypeID, bbitem.Quantity)
+			}
+			sort.Sort(ByQuantity(item.Buyback.Items))
+			app.priceAppraisalItems(item.Buyback.Items, &item.Buyback.Totals, "jita")
 		}
+		modifiedItems = append(modifiedItems,item)
+		buyback.Totals.Add(item.Buyback.Totals)
 	}
 
-	buyback.Items = make([]AppraisalItem, 0, len(buybackMap))
-	for _, item := range buybackMap {
-		buyback.Items = append(buyback.Items, *item)
+	for _, bbitem := range buybackMap {
+		buyback.Items = append(buyback.Items, *bbitem)
 	}
-
 	sort.Sort(ByQuantity(buyback.Items))
-
-	app.priceAppraisalItems(buyback.Items, &buyback.Totals, "jita")
 	return
 }
 
-func (app *App) collectBuybackItems(buybackMap map[string]*AppraisalItem, qualifier string, adjustment float64, typeID int64, quantity int64) {
+func (app *App) collectBuybackItems(itemMap map[string]*AppraisalItem, qualifier string, efficiency float64, typeID int64, quantity int64) (string, float64) {
 	t, _ := app.TypeDB.GetTypeByID(typeID)
 
+	portion := quantity / t.PortionSize
 	if t.GroupID == MineralGroupID {
-		app.updateBuybackItems(buybackMap, qualifier, adjustment, t, quantity)
+		app.updateBuybackItems(itemMap, qualifier, efficiency, t.Name, t.ID, portion)
 	} else {
-		fmt.Printf("Q: %v TYPE: %+v", qualifier, t)
+		if t.CategoryID == AsteroidCategoryID {
+			qualifier, efficiency = "REFINE",85
+		} else {
+			qualifier, efficiency = "REPROCESS",55
+		}
 		for _, material := range t.Materials {
-			app.collectBuybackItems(buybackMap, " (refined)", 85, material.TypeID, material.Quantity * quantity)
+			app.collectBuybackItems(itemMap, qualifier, efficiency, material.TypeID, portion * material.Quantity)
 		}
 	}
+
+	return qualifier, efficiency
 }
 
-func (app *App) updateBuybackItems(buybackMap map[string]*AppraisalItem, qualifier string, adjustment float64, t typedb.EveType, quantity int64) {
-	buybackKey := t.Name + qualifier
-	if component, exists := buybackMap[buybackKey]; exists {
+func (app *App) updateBuybackItems(itemMap map[string]*AppraisalItem, qualifier string, efficiency float64, typeName string, typeID int64, quantity int64) {
+	quantity = int64(float64(quantity) * efficiency / 100)
+	if component, exists := itemMap[typeName]; exists {
 		component.Quantity += quantity
 	} else {
-		buybackMap[buybackKey] = &AppraisalItem{Name: buybackKey, Quantity: quantity, TypeID: t.ID, PriceAdjustment: adjustment}
+		itemMap[typeName] = &AppraisalItem{Name: typeName, Quantity: quantity, TypeID: typeID, Efficiency: efficiency}
 	}
 }
 
 const MineralGroupID int64 = 18
+const AsteroidCategoryID int64 = 25
 
 func (app *App) ableToBuyback(t typedb.EveType) bool {
 	if (t.GroupID == MineralGroupID) {

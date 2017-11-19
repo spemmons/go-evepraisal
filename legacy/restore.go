@@ -143,7 +143,7 @@ func RestoreLegacyFile(saver func(*evepraisal.Appraisal) error, typeDB typedb.Ty
 			}
 			for _, item := range items {
 				ApplyPriceAndTypeInfo(appraisal, &item, priceMap, typeDB)
-				appraisal.Items = append(appraisal.Items, item)
+				appraisal.Original.Items = append(appraisal.Original.Items, item)
 			}
 		}
 
@@ -346,14 +346,14 @@ func ApplyPriceAndTypeInfo(appraisal *evepraisal.Appraisal, item *evepraisal.App
 		item.TypeID = eveType.ID
 		item.TypeName = eveType.Name
 		item.TypeVolume = eveType.Volume
-		appraisal.Totals.Volume += eveType.Volume * float64(item.Quantity)
+		appraisal.Original.Totals.Volume += eveType.Volume * float64(item.Quantity)
 
 		lprice, found := priceMap[eveType.ID]
 		if found {
 			prices := lprice.ToNewPrices()
 			item.Prices = prices
-			appraisal.Totals.Buy += prices.Buy.Max * float64(item.Quantity)
-			appraisal.Totals.Sell += prices.Sell.Min * float64(item.Quantity)
+			appraisal.Original.Totals.Buy += prices.Buy.Max * float64(item.Quantity)
+			appraisal.Original.Totals.Sell += prices.Sell.Min * float64(item.Quantity)
 		}
 	}
 }

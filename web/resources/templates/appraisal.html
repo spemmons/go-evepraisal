@@ -28,25 +28,24 @@
     </div>
 
     <div>
-      <h4>
-        <span class="nowrap">{{ prettybignumber .Page.Buyback.Totals.Buy }} <small>Buyback Offer for Reprocessed/Refined Minerals</small></span>
-      </h4>
-    </div>
-
-    {{template "_buyback_table.html" .Page.Buyback }}
-
-    <div>
       <p class="text-left"><strong>{{.Page.Appraisal.Kind}}</strong> priced in <strong>{{.Page.Appraisal.MarketName}}</strong> {{relativetime .Page.Appraisal.CreatedTime}}</p>
     </div>
 
     <div>
       <h4>
-        <span class="nowrap">{{ prettybignumber .Page.Appraisal.Totals.Sell }} <small>estimated sell value</small></span>
-        <span class="nowrap">{{ prettybignumber .Page.Appraisal.Totals.Buy }} <small>estimated buy value</small></span>
+        <span class="nowrap">{{ prettybignumber .Page.Appraisal.Original.Totals.Sell }} <small>estimated sell value</small></span>
+        <span class="nowrap">{{ prettybignumber .Page.Appraisal.Original.Totals.Buy }} <small>estimated buy value</small></span>
       </h4>
     </div>
 
-    {{template "_appraisal_table.html" .Page.Original }}
+    <div>
+      <h4 class="buyback">
+        <span class="nowrap">{{ prettybignumber .Page.Appraisal.Buyback.Totals.Buy }} <small class="buyback">Buyback Offer for Reprocessed/Refined Minerals</small></span>
+      </h4>
+    </div>
+
+    {{template "_appraisal_table.html" .Page }}
+
 
     <script type="text/javascript">
       window.history.replaceState({}, "", "/a/{{.Page.Appraisal.ID}}");
@@ -69,5 +68,42 @@
     </script>
   </div>
 </div>
+
+<div id="buyback_details_summary" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Overall Mineral Refine/Reprocess Results</h4>
+      </div>
+      <div class="modal-body">
+        {{template "_buyback_table.html" .Page.Appraisal.Buyback }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{range $i, $item := .Page.Appraisal.Original.Items}}
+<div id="buyback_details_{{ $i }}" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">{{ $item.Quantity }} {{ $item.Name }} {{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}% Results</h4>
+      </div>
+      <div class="modal-body">
+        {{template "_buyback_table.html" $item.Buyback }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}
+
 {{end}}
 {{template "_layout.html" .}}

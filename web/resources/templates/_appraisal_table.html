@@ -5,12 +5,12 @@
         <th>Item</th>
         <th class="text-right"><span class="nowrap">Volume (m<sup>3</sup>)</span></th>
         <th class="text-right"><span class="nowrap">Single (sell)<br>Single (buy)</span></th>
-        <th class="text-right"><span class="nowrap">Total (sell)<br>Total (buy)</span></th>
+        <th class="text-right" nowrap><span class="nowrap">Total (sell)<br>Total (buy)</span><br/><span class="buyback">Buyback</span></th>
         <th class="text-right"><span class="nowrap">ISK/m3 (sell)</span><br><span class="nowrap">ISK/m3 (buy)</span></th>
     </tr>
     </thead>
     <tbody>
-    {{range $i, $item := .Items}}
+    {{range $i, $item := .Appraisal.Original.Items}}
     {{ if (or $.ShowFull (lt $i 100)) }}
     <tr class="{{if (or (eq $item.TypeID 0) $item.Rejected )}}danger{{else if eq $item.Prices.All.Volume 0}}info{{end}}">
         <td class="numeric-cell text-center" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
@@ -24,8 +24,8 @@
             <a href="/item/{{$item.TypeID}}">
                 {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}
                 {{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}
-                {{if (ne $item.PriceAdjustment 0.0)}}({{ $item.PriceAdjustment | printf "%2.0f" }}%){{end}}
             </a>
+            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%)</span>{{end}}
         </td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
@@ -37,7 +37,8 @@
         <td class="numeric-cell text-right" data-sort-value="-{{$item.RepresentativePrice | printf "%f"}}">
         {{ if (not $item.Rejected) }}
             {{commaf $item.SellTotal}}<br />
-            {{commaf $item.BuyTotal}}
+            {{commaf $item.BuyTotal}}<br/>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_{{ $i }}">{{ commaf $item.Buyback.Totals.Buy }}</span>
         {{ end }}
         </td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.SellISKVolume | printf "%f"}}">
@@ -51,19 +52,22 @@
     {{end}}
     </tbody>
     <tfoot>
-    {{if (and (not $.ShowFull) (ge (len .Items) 100))}}
+    {{if (and (not $.ShowFull) (ge (len .Appraisal.Original.Items) 100))}}
     <tr>
-        <td class="text-center bg-warning text-white" colspan="6">There are too many results to show. <a href="/a/{{.ID}}?full=true">Click here to see all <strong>{{.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
+        <td class="text-center bg-warning text-white" colspan="6">There are too many results to show. <a href="/a/{{.ID}}?full=true">Click here to see all <strong>{{.Appraisal.Original.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
     </tr>
     {{end}}
     <tr>
         <td></td>
         <td colspan="3" class="text-right">Total Volume:<br/>
             Total Sell Value:<br/>
-            Total Buy Value:<br/></td>
-        <td class="text-right">{{commaf .Totals.Volume}}<br/>
-            {{commaf .Totals.Sell}}<br/>
-            {{commaf .Totals.Buy}}
+            Total Buy Value:<br/>
+            <span class="buyback">Buyback Value:</span><br/>
+        </td>
+        <td class="text-right">{{commaf .Appraisal.Original.Totals.Volume}}<br/>
+            {{commaf .Appraisal.Original.Totals.Sell}}<br/>
+            {{commaf .Appraisal.Original.Totals.Buy}}<br/>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Appraisal.Buyback.Totals.Buy}}</span>
         </td>
         <td></td>
     </tr>

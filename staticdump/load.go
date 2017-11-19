@@ -120,6 +120,18 @@ func downloadTypes(client *pester.Client, staticDumpURL string, staticDataPath s
 	return nil
 }
 
+type Group struct {
+	//Anchorable bool
+	//Anchored bool
+	CategoryID int64 `yaml:"categoryID"`
+	//FittableNonSingleton bool
+	Name          struct {
+		En string
+	}
+	//Published bool
+	//UseBasePrice bool
+}
+
 type Type struct {
 	GroupID       int64 `yaml:"groupID"`
 	MarketGroupID int64 `yaml:"marketGroupID"`
@@ -129,6 +141,7 @@ type Type struct {
 	Published bool
 	Volume    float64
 	BasePrice float64
+	PortionSize int64 `yaml:"portionSize"`
 }
 
 type Blueprint struct {
@@ -160,6 +173,13 @@ func loadtypes(staticDataPath string) ([]typedb.EveType, error) {
 	}
 	defer r.Close()
 
+	var allGroups map[int64]Group
+	err = loadDataFromZipFile(r, "sde/fsd/groupIDs.yaml", &allGroups)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Loaded %d groups", len(allGroups))
+	
 	var allTypes map[int64]Type
 	err = loadDataFromZipFile(r, "sde/fsd/typeIDs.yaml", &allTypes)
 	if err != nil {
@@ -210,13 +230,17 @@ func loadtypes(staticDataPath string) ([]typedb.EveType, error) {
 			continue
 		}
 
+		group, _ := allGroups[t.GroupID]
+
 		eveType := typedb.EveType{
 			ID:                typeID,
 			GroupID:           t.GroupID,
 			MarketGroupID:     t.MarketGroupID,
+			CategoryID:		   group.CategoryID,
 			Name:              t.Name.En,
 			Volume:            t.Volume,
 			BasePrice:         t.BasePrice,
+			PortionSize:       t.PortionSize,
 			BlueprintProducts: resolveBlueprintProducts(blueprintsByProductType, typeID),
 			Components:        resolveComponents(blueprintsByProductType, typeID),
 			BaseComponents:    flattenComponents(resolveBaseComponents(blueprintsByProductType, typeID, 1, 5)),

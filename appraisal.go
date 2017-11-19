@@ -21,17 +21,27 @@ type Totals struct {
 	Volume float64 `json:"volume"`
 }
 
+func (a *Totals) Add(b Totals) {
+	a.Buy += b.Buy
+	a.Sell += b.Sell
+	a.Volume += b.Volume
+}
+
+type ItemsAndTotals struct {
+	Totals     Totals          `json:"totals"`
+	Items      []AppraisalItem `json:"items"`
+}
+
 type Appraisal struct {
 	ID         string          `json:"id"`
 	Created    int64           `json:"created"`
 	Kind       string          `json:"kind"`
 	MarketName string          `json:"market_name"`
-	Totals     Totals          `json:"totals"`
-	Items      []AppraisalItem `json:"items"`
+	Original   ItemsAndTotals  `json:"original"`
+	Buyback    ItemsAndTotals  `json:"buyback"`
 	Raw        string          `json:"raw"`
 	Unparsed   map[int]string  `json:"unparsed"`
 	User       *User           `json:"user,omitempty"`
-	Buyback    Buyback		   `json:"buyback"`
 }
 
 func (appraisal *Appraisal) CreatedTime() time.Time {
@@ -45,8 +55,10 @@ type AppraisalItem struct {
 	TypeVolume float64 `json:"typeVolume"`
 	Quantity   int64   `json:"quantity"`
 	Prices     Prices  `json:"prices"`
-	PriceAdjustment float64
 	Rejected   bool
+	Qualifier  string
+	Efficiency float64
+	Buyback    ItemsAndTotals
 	Extra      struct {
 		Fitted     bool    `json:"fitted,omitempty"`
 		Dropped    bool    `json:"dropped,omitempty"`
@@ -67,14 +79,6 @@ func (i AppraisalItem) SellTotal() float64 {
 
 func (i AppraisalItem) BuyTotal() float64 {
 	return float64(i.Quantity) * i.Prices.Buy.Max
-}
-
-func (i AppraisalItem) AdjustedBuyTotal() float64 {
-	if i.PriceAdjustment == 0.0 {
-		return i.BuyTotal()
-	}
-
-	return float64(i.Quantity) * i.Prices.Buy.Max * (i.PriceAdjustment / 100.0)
 }
 
 func (i AppraisalItem) SellISKVolume() float64 {
@@ -296,10 +300,10 @@ func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
 	appraisal.Kind = kind
 	appraisal.MarketName = market
 
-	appraisal.Items = parserResultToAppraisalItems(result)
-	app.priceAppraisalItems(appraisal.Items, &appraisal.Totals, market)
+	appraisal.Original.Items = parserResultToAppraisalItems(result)
+	app.priceAppraisalItems(appraisal.Original.Items, &appraisal.Original.Totals, market)
 
-	appraisal.Buyback = app.calculateBuyback(appraisal.Items)
+	appraisal.Original.Items, appraisal.Buyback = app.calculateBuyback(appraisal.Original.Items)
 
 	return appraisal, nil
 }
@@ -331,7 +335,7 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 
 		items[i].Prices = prices
 
-		totals.Buy += items[i].AdjustedBuyTotal()
+		totals.Buy += items[i].BuyTotal()
 		totals.Sell += items[i].SellTotal()
 		totals.Volume += items[i].TypeVolume * float64(items[i].Quantity)
 	}
@@ -484,15 +488,18 @@ func parserResultToAppraisalItems(result parsers.ParserResult) []AppraisalItem {
 		}
 	}
 
-	mappedItems := make(map[AppraisalItem]int64)
+	itemMap		:= make(map[string]AppraisalItem)
+	quantityMap := make(map[string]int64)
 	for _, item := range items {
 		item.Name = strings.Trim(item.Name, " \t")
-		mappedItems[item] += item.Quantity
+		key := strings.ToUpper(item.Name)
+		itemMap[key] = item
+		quantityMap[key] += item.Quantity
 	}
 
-	returnItems := make([]AppraisalItem, 0, len(mappedItems))
-	for item, quantity := range mappedItems {
-		item.Quantity = quantity
+	returnItems := make([]AppraisalItem, 0, len(itemMap))
+	for key, item := range itemMap {
+		item.Quantity = quantityMap[key]
 		returnItems = append(returnItems, item)
 	}
 
