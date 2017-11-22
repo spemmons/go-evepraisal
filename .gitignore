@@ -1,4 +1,5 @@
 .DS_Store
 /target
+bindata.go
 evepraisal.toml
 fuzz/

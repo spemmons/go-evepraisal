@@ -10,6 +10,7 @@
       <th colspan="2" class="text-center">Created</th>
       <th colspan="2" class="text-center">Sell Value</th>
       <th colspan="2" class="text-center">Buy Value</th>
+      <th colspan="2" class="text-center">Buyback Offer</th>
       <th class="text-center">Visibility</th>
     </tr>
     {{range $appraisal := .Page.Appraisals}}
@@ -19,10 +20,12 @@
       <td>{{$appraisal.MarketName}}</td>
       <td class="text-right">{{relativetime $appraisal.CreatedTime}}</td>
       <td class="text-left">{{timefmt $appraisal.CreatedTime}}</td>
-      <td class="text-right">{{commaf $appraisal.Totals.Sell}}</td>
-      <td class="text-left">{{prettybignumber $appraisal.Totals.Sell}} ISK</td>
-      <td class="text-right">{{commaf $appraisal.Totals.Buy}}</td>
-      <td class="text-left">{{prettybignumber $appraisal.Totals.Buy}} ISK</td>
+      <td class="text-right">{{commaf $appraisal.Original.Totals.Sell}}</td>
+      <td class="text-left">{{prettybignumber $appraisal.Original.Totals.Sell}} ISK</td>
+      <td class="text-right">{{commaf $appraisal.Original.Totals.Buy}}</td>
+      <td class="text-left">{{prettybignumber $appraisal.Original.Totals.Buy}} ISK</td>
+      <td class="text-right">{{commaf $appraisal.Buyback.Totals.Buy}}</td>
+      <td class="text-left">{{prettybignumber $appraisal.Buyback.Totals.Buy}} ISK</td>
       <td class="text-center">{{if $appraisal.Private}}<span class="badge alert-info">Private</span>{{else}}<span class="badge badge-primary">Public</span>{{end}}</td>
     </tr>
     {{end}}

@@ -29,7 +29,6 @@
 // resources/static/thirdparty/typeahead.js/typeahead.bundle.min.js
 // resources/static/thirdparty/typeahead.js/typeahead.jquery.js
 // resources/static/thirdparty/typeahead.js/typeahead.jquery.min.js
-// resources/templates/_appraisal_table.html
 // resources/templates/_buyback_table.html
 // resources/templates/_layout.html
 // resources/templates/_paste-panel.html
@@ -47,7 +46,7 @@
 // resources/templates/legal.html
 // resources/templates/main.html
 // resources/templates/search.html
-// resources/templates/user_latest.html
+// resources/templates/user_history.html
 // resources/templates/view_item.html
 // DO NOT EDIT!
 
@@ -597,24 +596,6 @@ func staticThirdpartyTypeaheadJsTypeaheadJqueryMinJs() (*asset, error) {
 	return a, err
 }
 
-// templates_appraisal_tableHtml reads file data from disk. It returns an error on failure.
-func templates_appraisal_tableHtml() (*asset, error) {
-	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/_appraisal_table.html"
-	name := "templates/_appraisal_table.html"
-	bytes, err := bindataRead(path, name)
-	if err != nil {
-		return nil, err
-	}
-
-	fi, err := os.Stat(path)
-	if err != nil {
-		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
-	}
-
-	a := &asset{bytes: bytes, info: fi}
-	return a, err
-}
-
 // templates_buyback_tableHtml reads file data from disk. It returns an error on failure.
 func templates_buyback_tableHtml() (*asset, error) {
 	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/_buyback_table.html"
@@ -921,10 +902,10 @@ func templatesSearchHtml() (*asset, error) {
 	return a, err
 }
 
-// templatesUser_latestHtml reads file data from disk. It returns an error on failure.
-func templatesUser_latestHtml() (*asset, error) {
-	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/user_latest.html"
-	name := "templates/user_latest.html"
+// templatesUser_historyHtml reads file data from disk. It returns an error on failure.
+func templatesUser_historyHtml() (*asset, error) {
+	path := "/Users/steveemmons/Personal/go/src/github.com/evepraisal/go-evepraisal/web/resources/templates/user_history.html"
+	name := "templates/user_history.html"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -1038,7 +1019,6 @@ var _bindata = map[string]func() (*asset, error){
 	"static/thirdparty/typeahead.js/typeahead.bundle.min.js": staticThirdpartyTypeaheadJsTypeaheadBundleMinJs,
 	"static/thirdparty/typeahead.js/typeahead.jquery.js": staticThirdpartyTypeaheadJsTypeaheadJqueryJs,
 	"static/thirdparty/typeahead.js/typeahead.jquery.min.js": staticThirdpartyTypeaheadJsTypeaheadJqueryMinJs,
-	"templates/_appraisal_table.html": templates_appraisal_tableHtml,
 	"templates/_buyback_table.html": templates_buyback_tableHtml,
 	"templates/_layout.html": templates_layoutHtml,
 	"templates/_paste-panel.html": templates_pastePanelHtml,
@@ -1056,7 +1036,7 @@ var _bindata = map[string]func() (*asset, error){
 	"templates/legal.html": templatesLegalHtml,
 	"templates/main.html": templatesMainHtml,
 	"templates/search.html": templatesSearchHtml,
-	"templates/user_latest.html": templatesUser_latestHtml,
+	"templates/user_history.html": templatesUser_historyHtml,
 	"templates/view_item.html": templatesView_itemHtml,
 }
 
@@ -1144,7 +1124,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		}},
 	}},
 	"templates": &bintree{nil, map[string]*bintree{
-		"_appraisal_table.html": &bintree{templates_appraisal_tableHtml, map[string]*bintree{}},
 		"_buyback_table.html": &bintree{templates_buyback_tableHtml, map[string]*bintree{}},
 		"_layout.html": &bintree{templates_layoutHtml, map[string]*bintree{}},
 		"_paste-panel.html": &bintree{templates_pastePanelHtml, map[string]*bintree{}},
@@ -1162,7 +1141,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"legal.html": &bintree{templatesLegalHtml, map[string]*bintree{}},
 		"main.html": &bintree{templatesMainHtml, map[string]*bintree{}},
 		"search.html": &bintree{templatesSearchHtml, map[string]*bintree{}},
-		"user_latest.html": &bintree{templatesUser_latestHtml, map[string]*bintree{}},
+		"user_history.html": &bintree{templatesUser_historyHtml, map[string]*bintree{}},
 		"view_item.html": &bintree{templatesView_itemHtml, map[string]*bintree{}},
 	}},
 }}

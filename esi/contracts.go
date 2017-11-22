@@ -1,0 +1,5 @@
+package esi
+
+func GetContracts() {
+
+}

@@ -108,7 +108,7 @@
         </tr>
       </thead>
       <tbody>
-      {{range $i, $item := .Page.Appraisal.Items}}
+      {{range $i, $item := .Page.Appraisal.Original.Items}}
       {{ if (or $.Page.ShowFull (lt $i 100)) }}
         <tr class="{{if eq $item.TypeID 0}}danger{{else if eq $item.Prices.All.Volume 0}}info{{end}}">
           <td class="numeric-cell text-center" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
@@ -117,29 +117,37 @@
             <a href="/item/{{$item.TypeID}}">
               <img class="pull-left media-object" src="https://image.eveonline.com/Type/{{$item.TypeID}}_32.png" alt="{{$item.TypeName}}">
             </a>
-            &nbsp;
             {{end}}
-            <a href="/item/{{$item.TypeID}}">
-              {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)</a>
-              <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}
+            <a href="/item/{{$item.TypeID}}">{{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)
+              <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
+            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%)</span>{{end}}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
+          {{ if (not $item.Rejected) }}
             {{commaf $item.Prices.Sell.Min}}<br />
-            {{commaf $item.Prices.Buy.Max}}</td>
+            {{commaf $item.Prices.Buy.Max}}
+          {{ end }}
+          </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.RepresentativePrice | printf "%f"}}">
+          {{ if (not $item.Rejected) }}
             {{commaf $item.SellTotal}}<br />
-            {{commaf $item.BuyTotal}}</td>
+            {{commaf $item.BuyTotal}}<br/>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_{{ $i }}">{{ commaf $item.Buyback.Totals.Buy }}</span>
+          {{ end }}
+          </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SellISKVolume | printf "%f"}}">
+          {{ if (not $item.Rejected) }}
             {{commaf $item.SellISKVolume}}<br />
             {{commaf $item.BuyISKVolume}}
+          {{ end }}
           </td>
         </tr>
       {{end}}
       {{end}}
       </tbody>
       <tfoot>
-        {{if (and (not $.Page.ShowFull) (ge (len .Page.Appraisal.Items) 100))}}
+        {{if (and (not $.Page.ShowFull) (ge (len .Page.Appraisal.Original.Items) 100))}}
         <tr>
           <td class="text-center bg-warning text-white" colspan="6">There are too many results to show. <a href="/a/{{.Page.Appraisal.ID}}?full=true">Click here to see all <strong>{{.Page.Appraisal.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
         </tr>
@@ -147,11 +155,14 @@
         <tr>
           <td></td>
           <td colspan="3" class="text-right">Total Volume:<br/>
-    Total Sell Value:<br/>
-    Total Buy Value:<br/></td>
-          <td class="text-right">{{commaf .Page.Appraisal.Totals.Volume}}<br/>
-    {{commaf .Page.Appraisal.Totals.Sell}}<br/>
-    {{commaf .Page.Appraisal.Totals.Buy}}
+            Total Sell Value:<br/>
+            Total Buy Value:<br/>
+            <span class="buyback">Buyback Value:</span><br/>
+          </td>
+          <td class="text-right">{{commaf .Page.Appraisal.Original.Totals.Volume}}<br/>
+            {{commaf .Page.Appraisal.Original.Totals.Sell}}<br/>
+            {{commaf .Page.Appraisal.Original.Totals.Buy}}<br/>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Page.Appraisal.Buyback.Totals.Buy}}</span>
             </td>
           <td></td>
         </tr>

@@ -21,12 +21,6 @@ type Totals struct {
 	Volume float64 `json:"volume"`
 }
 
-func (a *Totals) Add(b Totals) {
-	a.Buy += b.Buy
-	a.Sell += b.Sell
-	a.Volume += b.Volume
-}
-
 type ItemsAndTotals struct {
 	Totals     Totals          `json:"totals"`
 	Items      []AppraisalItem `json:"items"`
@@ -57,7 +51,7 @@ func (appraisal *Appraisal) String() string {
 	}
 	s := fmt.Sprintf(
 		"[Appraisal] id=%s, market=%s, kind=%s, items=%d, unparsed=%d",
-		appraisalID, appraisal.MarketName, appraisal.Kind, len(appraisal.Items), len(appraisal.Unparsed))
+		appraisalID, appraisal.MarketName, appraisal.Kind, len(appraisal.Original.Items), len(appraisal.Unparsed))
 	if appraisal.User != nil {
 		s += ", user=" + appraisal.User.CharacterName
 	}

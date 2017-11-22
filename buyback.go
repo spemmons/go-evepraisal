@@ -22,12 +22,12 @@ func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems [
 			app.priceAppraisalItems(item.Buyback.Items, &item.Buyback.Totals, "jita")
 		}
 		modifiedItems = append(modifiedItems,item)
-		buyback.Totals.Add(item.Buyback.Totals)
 	}
 
 	for _, bbitem := range buybackMap {
 		buyback.Items = append(buyback.Items, *bbitem)
 	}
+	app.priceAppraisalItems(buyback.Items, &buyback.Totals, "jita")
 	sort.Sort(ByQuantity(buyback.Items))
 	return
 }
