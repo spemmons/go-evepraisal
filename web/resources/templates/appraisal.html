@@ -110,7 +110,7 @@
       <tbody>
       {{range $i, $item := .Page.Appraisal.Original.Items}}
       {{ if (or $.Page.ShowFull (lt $i 100)) }}
-        <tr class="{{if eq $item.TypeID 0}}danger{{else if eq $item.Prices.All.Volume 0}}info{{end}}">
+        <tr class="{{if or (eq $item.TypeID 0) $item.Rejected}}danger{{else if eq $item.Prices.All.Volume 0}}info{{end}}">
           <td class="numeric-cell text-center" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
           <td>
             {{if (and $item.TypeName (lt $i 30))}}
@@ -134,6 +134,8 @@
             {{commaf $item.SellTotal}}<br />
             {{commaf $item.BuyTotal}}<br/>
             <span class="buyback" data-toggle="modal" data-target="#buyback_details_{{ $i }}">{{ commaf $item.Buyback.Totals.Buy }}</span>
+          {{ else }}
+            NO BUYBACK OFFER
           {{ end }}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SellISKVolume | printf "%f"}}">
