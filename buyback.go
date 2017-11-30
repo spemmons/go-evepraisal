@@ -36,7 +36,7 @@ func (app *App) collectBuybackItems(itemMap map[string]*AppraisalItem, qualifier
 	t, _ := app.TypeDB.GetTypeByID(typeID)
 
 	portion := quantity / t.PortionSize
-	if t.GroupID == MineralGroupID {
+	if inBuybackGroup(t.GroupID) {
 		app.updateBuybackItems(itemMap, qualifier, efficiency, t.Name, t.ID, portion)
 	} else {
 		if t.CategoryID == AsteroidCategoryID {
@@ -62,10 +62,11 @@ func (app *App) updateBuybackItems(itemMap map[string]*AppraisalItem, qualifier 
 }
 
 const MineralGroupID int64 = 18
+const MoonMaterialsGroupID int64 = 427
 const AsteroidCategoryID int64 = 25
 
 func (app *App) ableToBuyback(t typedb.EveType) bool {
-	if (t.GroupID == MineralGroupID) {
+	if inBuybackGroup(t.GroupID) {
 		return true
 	}
 
@@ -77,6 +78,10 @@ func (app *App) ableToBuyback(t typedb.EveType) bool {
 	}
 
 	return len(t.Materials) > 0
+}
+
+func inBuybackGroup(groupID int64) bool {
+	return groupID == MineralGroupID || groupID == MoonMaterialsGroupID;
 }
 
 type ByQuantity []AppraisalItem
