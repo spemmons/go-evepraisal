@@ -2,6 +2,7 @@ package web
 
 import (
 	"html/template"
+	"net/http"
 
 	"golang.org/x/oauth2"
 
@@ -28,4 +29,8 @@ func NewContext(app *evepraisal.App) *Context {
 	ctx := &Context{App: app}
 	ctx.GenerateStaticEtags()
 	return ctx
+}
+
+func (ctx *Context) AccessToken(r *http.Request) string {
+	return ctx.getSessionValueWithDefault(r, "access_token", "")
 }

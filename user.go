@@ -9,6 +9,7 @@ func init() {
 }
 
 type User struct {
+	CharacterID        int64
 	CharacterName      string
 	CharacterOwnerHash string
 }

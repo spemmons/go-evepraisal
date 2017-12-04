@@ -83,6 +83,7 @@ func (ctx *Context) HandleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx.setSessionValue(r, w, "user", &user)
+	ctx.setSessionValue(r, w, "access_token", tok.AccessToken)
 	log.Printf("User logged in: %s", user.CharacterName)
 
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)

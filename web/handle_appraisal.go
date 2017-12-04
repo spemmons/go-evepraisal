@@ -16,6 +16,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/evepraisal/go-evepraisal"
+	"github.com/evepraisal/go-evepraisal/esi"
 	"github.com/evepraisal/go-evepraisal/legacy"
 	"github.com/go-zoo/bone"
 )
@@ -133,7 +134,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appraisal.User = ctx.GetCurrentUser(r)
+	appraisal.User = user
 	appraisal.Private = private
 	appraisal.PrivateToken = NewPrivateAppraisalToken()
 
@@ -222,6 +223,13 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 	if r.Header.Get("format") == "raw" {
 		io.WriteString(w, appraisal.Raw)
 		return
+	}
+
+	if user != nil {
+		contracts := esi.NewContractFetcher(ctx.AccessToken(r)).GetContracts(user.CharacterID)
+		for _, contract := range contracts {
+			fmt.Printf("CONTRACT: %+v\n", contract)
+		}
 	}
 
 	ctx.render(r, w, "appraisal.html",
