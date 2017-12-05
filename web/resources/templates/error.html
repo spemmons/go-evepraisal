@@ -1,9 +1,11 @@
-{{define "title"}}IP Buyback / Evepraisal - {{.Page.ErrorTitle}}{{end}}
+{{define "title"}}IP-Org Buyback / Evepraisal - {{.Page.ErrorTitle}}{{end}}
 {{define "content"}}
 <div>
-  <div class="col-lg-4">
-  	{{template "_paste-panel.html" .}}
-  </div>
+{{if ne .UI.LoginEnabled (not .UI.User)}}
+    <div class="col-lg-4">
+    {{template "_paste-panel.html" .}}
+    </div>
+{{end}}
 
   <div class="col-lg-8">
     <div class="jumbotron">

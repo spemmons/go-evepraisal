@@ -1,4 +1,4 @@
-{{define "title"}}IP Buyback - Appraisal Result {{.Page.Appraisal.ID}} [{{.Page.Appraisal.Kind}}]{{end}}
+{{define "title"}}IP-Org Buyback - Appraisal Result {{.Page.Appraisal.ID}} [{{.Page.Appraisal.Kind}}]{{end}}
 
 {{define "content"}}
 <!-- Delete Modal -->
@@ -49,10 +49,6 @@
 
 <!-- Real Content -->
 <div class="row">
-  <div class="col-lg-4">
-    {{template "_paste-panel.html" .}}
-  </div>
-
   <div class="col-lg-8">
     {{ if .Page.Appraisal.Unparsed }}
     <div class="alert alert-warning" role="alert">

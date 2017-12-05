@@ -1,4 +1,4 @@
-{{define "title"}}IP Buyback / Evepraisal - Latest Appraisals{{end}}
+{{define "title"}}IP-Org Buyback / Evepraisal - Latest Appraisals{{end}}
 {{define "content"}}
 <div class="container">
   <h2>Latest Appraisals</h2>
@@ -18,10 +18,10 @@
       <td>{{$appraisal.MarketName}}</td>
       <td class="text-right">{{relativetime $appraisal.CreatedTime}}</td>
       <td class="text-left">{{timefmt $appraisal.CreatedTime}}</td>
-      <td class="text-right">{{commaf $appraisal.Totals.Sell}}</td>
-      <td class="text-left">{{prettybignumber $appraisal.Totals.Sell}} ISK</td>
-      <td class="text-right">{{commaf $appraisal.Totals.Buy}}</td>
-      <td class="text-left">{{prettybignumber $appraisal.Totals.Buy}} ISK</td>
+      <td class="text-right">{{commaf $appraisal.Original.Totals.Sell}}</td>
+      <td class="text-left">{{prettybignumber $appraisal.Original.Totals.Sell}} ISK</td>
+      <td class="text-right">{{commaf $appraisal.Original.Totals.Buy}}</td>
+      <td class="text-left">{{prettybignumber $appraisal.Original.Totals.Buy}} ISK</td>
     </tr>
     {{end}}
   </table>

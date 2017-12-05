@@ -1,8 +1,10 @@
-{{define "title"}}IP Buyback / Evepraisal - API Documentation{{end}}
+{{define "title"}}IP-Org Buyback / Evepraisal - API Documentation{{end}}
 {{define "content"}}
+{{if ne .UI.LoginEnabled (not .UI.User)}}
 <div class="col-lg-4">
   {{template "_paste-panel.html" .}}
 </div>
+{{end}}
 <div class="col-lg-8">
   <h4>What is this?</h4>
   <p>This is a tool for Eve Online aimed at being able to quickly price check items in bulk. </p>
