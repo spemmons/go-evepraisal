@@ -91,6 +91,11 @@ func (db *AppraisalDB) PutNewAppraisal(appraisal *evepraisal.Appraisal) error {
 				return err
 			}
 		}
+
+		if appraisal.User != nil {
+			appraisal.OwnerID = appraisal.User.CharacterID
+		}
+
 		var buf bytes.Buffer
 		encoder := gob.NewEncoder(&buf)
 		err = encoder.Encode(appraisal)

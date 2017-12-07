@@ -5,7 +5,13 @@ import (
 	"net/http"
 
 	"github.com/evepraisal/go-evepraisal"
+	"github.com/evepraisal/go-evepraisal/esi"
 )
+
+type StatusedAppraisal struct {
+	Appraisal evepraisal.Appraisal
+	Status esi.ContractStatus
+}
 
 // HandleUserHistoryAppraisals is the handler for /user/latest
 func (ctx *Context) HandleUserHistoryAppraisals(w http.ResponseWriter, r *http.Request) {
@@ -30,14 +36,25 @@ func (ctx *Context) HandleUserHistoryAppraisals(w http.ResponseWriter, r *http.R
 		cleanAppraisals = cleanAppraisals[0:limit]
 	}
 
+	var history = make([]StatusedAppraisal,len(cleanAppraisals))
+	if len(history) > 0 {
+		cf := esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r))
+		contracts, _ := cf.GetContracts(user.CharacterID)
+		for index, appraisal := range cleanAppraisals {
+			history[index].Appraisal = appraisal
+			history[index].Status = *cf.EvaluateContract(user, &appraisal, contracts)
+			fmt.Println()
+		}
+	}
+
 	ctx.render(r, w, "user_history.html", struct {
-		Appraisals []evepraisal.Appraisal `json:"appraisals"`
+		History    []StatusedAppraisal 	`json:"history"`
 		Before     string                 `json:"before"`
 		Limit      int                    `json:"limit"`
 		HasMore    bool                   `json:"has_more"`
 		Next       string                 `json:"next"`
 	}{
-		cleanAppraisals,
+		history,
 		before,
 		limit,
 		hasMore,

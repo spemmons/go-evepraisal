@@ -48,8 +48,48 @@
 </div>
 
 <!-- Real Content -->
+{{if .Page.Status}}
 <div class="row">
-  <div class="col-lg-8">
+    {{if or (eq .Page.Status.Summary "not_found") (eq .Page.Status.Summary "deleted")}}
+        {{if eq .Page.Status.Summary "deleted"}}
+            <p class="buyback">You deleted your contract. Please try again if you wish.</p>
+        {{end}}
+        <p>To submit this Buyback Offer, you will need to create a contract with these in the following way:</p>
+            <ol>
+                <li>Contract Type: <i class="buyback">Item Exchange</i></li>
+                <li>Availability: <i><span class="buyback">Private</span> to <span class="buyback">0.0 Massive Production</span>; you can use the corp ticket <span class="buyback">0MP</span></i></li>
+                <li>I will receive: <i class="buyback">{{commaf .Page.Appraisal.BuybackOffer}}</i> also called Price</li>
+                <li>Expiration: <i class="buyback">2 Weeks</i> or longer</li>
+                <li>Description: <i class="buyback">{{ .Page.Status.Title }}</i></li>
+            </ol>
+        <p>
+            <a role="button" class="btn btn-primary" type="button" href="{{.Page.Appraisal | appraisallink}}">CHECK CONTRACT NOW</a></button>
+            NOTE: CCP only updates contract data every 5 minutes. Please wait 5 minutes after creating your contract. Sorry, mate!
+        </p>
+    {{else if eq .Page.Status.Summary "accepted"}}
+        <h1 class="buyback">CONGRATULATIONS! Your contract was accepted!</h1>
+    {{else}}
+        {{if eq .Page.Status.Summary "valid"}}
+            <h1 class="buyback">VALID CONTRACT FOUND!</h1>
+            <p>The IP-Org leadership have been notified and your contract should be accepted soon.</p>
+        {{else}}
+            <h1 class="text-danger">NOTICE</h1>
+            {{if .Page.Status.Contract}}
+                <p>A contract for this Buyback Offer with the Description <span class="buyback">{{.Page.Status.Title}}</span> was found, but it is <i class="text-danger">{{.Page.Status.Summary}}</i></p>
+            {{else}}
+                <p>This Buyback Offer is <i class="text-danger">{{.Page.Status.Summary}}</i></p>
+            {{end}}
+            <p>If you think that this is a mistake, please contact the IP-Org leadership.</p>
+            <ul>
+            {{range $unused, $error := .Page.Status.Errors}}
+                <li class="text-danger">{{$error}}</li>
+            {{end}}
+            </ul>
+        {{end}}
+    {{end}}
+</div>
+{{end}}
+<div class="row">
     {{ if .Page.Appraisal.Unparsed }}
     <div class="alert alert-warning" role="alert">
       <strong>Bad lines!</strong> <strong>{{ .Page.Appraisal.Unparsed | len }}</strong> of the lines could not be parsed.
@@ -114,8 +154,7 @@
               <img class="pull-left media-object" src="https://image.eveonline.com/Type/{{$item.TypeID}}_32.png" alt="{{$item.TypeName}}">
             </a>
             {{end}}
-            <a href="/item/{{$item.TypeID}}">{{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)
-              <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
+            <a href="/item/{{$item.TypeID}}">{{$item.DisplayName}}{{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
             {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%)</span>{{end}}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
@@ -160,7 +199,7 @@
           <td class="text-right">{{commaf .Page.Appraisal.Original.Totals.Volume}}<br/>
             {{commaf .Page.Appraisal.Original.Totals.Sell}}<br/>
             {{commaf .Page.Appraisal.Original.Totals.Buy}}<br/>
-            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Page.Appraisal.Buyback.Totals.Buy}}</span>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Page.Appraisal.BuybackOffer}}</span>
             </td>
           <td></td>
         </tr>
@@ -193,43 +232,43 @@
       });
     </script>
   </div>
-</div>
 
-<div id="buyback_details_summary" class="modal fade" role="dialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Overall Mineral Refine/Reprocess Results</h4>
-      </div>
-      <div class="modal-body">
-        {{template "_buyback_table.html" .Page.Appraisal.Buyback }}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+  <div id="buyback_details_summary" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Overall Mineral Refine/Reprocess Results</h4>
+        </div>
+        <div class="modal-body">
+          {{template "_buyback_table.html" .Page.Appraisal.Buyback }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-{{range $i, $item := .Page.Appraisal.Original.Items}}
-<div id="buyback_details_{{ $i }}" class="modal fade" role="dialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">{{ $item.Quantity }} {{ $item.Name }} {{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}% Results</h4>
-      </div>
-      <div class="modal-body">
-        {{template "_buyback_table.html" $item.Buyback }}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+  {{range $i, $item := .Page.Appraisal.Original.Items}}
+  <div id="buyback_details_{{ $i }}" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">{{ $item.Quantity }} {{ $item.Name }} {{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}% Results</h4>
+        </div>
+        <div class="modal-body">
+          {{template "_buyback_table.html" $item.Buyback }}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
+  {{end}}
 </div>
-{{end}}
 
 {{end}}
 {{template "_layout.html" .}}

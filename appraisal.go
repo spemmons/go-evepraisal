@@ -35,6 +35,7 @@ type Appraisal struct {
 	Buyback      ItemsAndTotals  `json:"buyback"`
 	Raw          string          `json:"raw"`
 	Unparsed     map[int]string  `json:"unparsed"`
+	OwnerID	     int64 			 `json:"owner_id,omitempty"`
 	User         *User           `json:"user,omitempty"`
 	Private      bool            `json:"private"`
 	PrivateToken string          `json:"private_token,omitempty"`
@@ -42,6 +43,25 @@ type Appraisal struct {
 
 func (appraisal *Appraisal) CreatedTime() time.Time {
 	return time.Unix(appraisal.Created, 0)
+}
+
+func (appraisal *Appraisal) BuybackOffer() float64 {
+	return float64(int64(appraisal.Buyback.Totals.Buy + 0.99));
+}
+
+
+func (appraisal *Appraisal) BuybackReady() bool {
+	if len(appraisal.Original.Items) == 0 {
+		return false
+	}
+
+	for _, item := range appraisal.Original.Items {
+		if item.Rejected {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (appraisal *Appraisal) String() string {
@@ -84,6 +104,14 @@ type AppraisalItem struct {
 		BPC        bool    `json:"bpc"`
 		BPCRuns    int64   `json:"bpcRuns,omitempty"`
 	} `json:"meta,omitempty"`
+}
+
+func (i AppraisalItem) DisplayName() string {
+	if i.TypeName != "" {
+		return i.TypeName
+	} else {
+		return i.Name
+	}
 }
 
 func (i AppraisalItem) SellTotal() float64 {

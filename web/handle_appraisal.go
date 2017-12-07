@@ -29,6 +29,7 @@ var (
 // AppraisalPage contains data used on the appraisal page
 type AppraisalPage struct {
 	Appraisal *evepraisal.Appraisal `json:"appraisal"`
+	Status    *esi.ContractStatus   `json:"status"`
 	ShowFull  bool                  `json:"show_full,omitempty"`
 	IsOwner   bool                  `json:"is_owner,omitempty"`
 }
@@ -159,12 +160,18 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 		return appraisal.Original.Items[i].RepresentativePrice() > appraisal.Original.Items[j].RepresentativePrice()
 	})
 
+	var status *esi.ContractStatus = nil
+	if user != nil && appraisal.OwnerID == user.CharacterID {
+		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r)).GetContractStatus(user, appraisal)
+	}
+
 	// Render the new appraisal to the screen (there is no redirect here, we set the URL using javascript later)
 	w.Header().Add("X-Appraisal-ID", appraisal.ID)
 	ctx.render(r, w, "appraisal.html",
 		AppraisalPage{
 			IsOwner:   IsAppraisalOwner(user, appraisal),
 			Appraisal: cleanAppraisal(appraisal),
+			Status: status,
 		},
 	)
 }
@@ -225,16 +232,15 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if user != nil {
-		contracts := esi.NewContractFetcher(ctx.AccessToken(r)).GetContracts(user.CharacterID)
-		for _, contract := range contracts {
-			fmt.Printf("CONTRACT: %+v\n", contract)
-		}
+	var status *esi.ContractStatus = nil
+	if user != nil && appraisal.OwnerID == user.CharacterID {
+		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r)).GetContractStatus(user, appraisal)
 	}
 
 	ctx.render(r, w, "appraisal.html",
 		AppraisalPage{
 			Appraisal: appraisal,
+			Status:    status,
 			ShowFull:  r.FormValue("full") != "",
 			IsOwner:   isOwner,
 		})
