@@ -110,7 +110,7 @@ func (cf *ContractFetcher) getUniverseStation(stationID int64) (*UniverseStation
 
 func (cf *ContractFetcher) getUniverseStructure(locationID int64) (*UniverseStructure, bool) {
 	result := new(UniverseStructure)
-	url := fmt.Sprintf("%s/universe/structures/%d/?token=%s", cf.baseURL, locationID, cf.token.AccessToken)
+	url := fmt.Sprintf("%s/universe/structures/%d/", cf.baseURL, locationID)
 	err := fetchURL(cf.client, url, result)
 	return result, err == nil
 }

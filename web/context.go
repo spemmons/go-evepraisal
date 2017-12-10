@@ -32,11 +32,11 @@ func NewContext(app *evepraisal.App) *Context {
 	return ctx
 }
 
-func (ctx *Context) OauthToken(r *http.Request) (token *oauth2.Token) {
-	token = new(oauth2.Token)
+func (ctx *Context) OauthClient(r *http.Request) *http.Client {
+	token := new(oauth2.Token)
 	token.AccessToken = ctx.getSessionValueWithDefault(r, "access_token", "")
 	token.RefreshToken = ctx.getSessionValueWithDefault(r, "refresh_token", "")
 	token.TokenType = ctx.getSessionValueWithDefault(r, "token_type", "")
 	token.Expiry, _ = ctx.getSessionValue(r, "expiry").(time.Time)
-	return
+	return ctx.OauthConfig.Client(r.Context(),token)
 }

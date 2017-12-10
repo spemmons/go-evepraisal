@@ -9,7 +9,7 @@ import (
 	"github.com/sethgrid/pester"
 	"github.com/spf13/viper"
 	"github.com/evepraisal/go-evepraisal/typedb"
-	"golang.org/x/oauth2"
+	"net/http"
 )
 
 const ValidAssignee = 98497376  // NOTE: ID for 0.0 Massive Production
@@ -62,31 +62,29 @@ type ContractStatus struct {
 type ContractFetcher struct {
 	typedb  typedb.TypeDB
 	client  *pester.Client
-	token   *oauth2.Token
 	baseURL string
 }
 
-func NewContractFetcher(typedb typedb.TypeDB, token *oauth2.Token) *ContractFetcher {
-	httpClient := pester.New()
-	httpClient.Concurrency = 5
-	httpClient.Timeout = 30 * time.Second
-	httpClient.Backoff = pester.ExponentialJitterBackoff
-	httpClient.MaxRetries = 10
+func NewContractFetcher(typedb typedb.TypeDB, httpClient *http.Client) *ContractFetcher {
+	client := pester.NewExtendedClient(httpClient)
+	client.Concurrency = 5
+	client.Timeout = 30 * time.Second
+	client.Backoff = pester.ExponentialJitterBackoff
+	client.MaxRetries = 10
 
-	return &ContractFetcher{typedb, httpClient, token, viper.GetString("esi_baseurl")}
+	return &ContractFetcher{typedb, client, viper.GetString("esi_baseurl")}
 }
 
 func (cf *ContractFetcher) GetContracts(characterID int64) (result []Contract, err error) {
-	fmt.Printf("CHAR: %v TOKEN %v\n", characterID, cf.token)
 	result = make([]Contract, 0)
-	url := fmt.Sprintf("%s/characters/%d/contracts/?token=%s", cf.baseURL, characterID, cf.token.AccessToken)
+	url := fmt.Sprintf("%s/characters/%d/contracts/", cf.baseURL, characterID)
 	err = fetchURL(cf.client, url, &result)
 	return
 }
 
 func (cf *ContractFetcher) GetContractItems(characterID int64, contractID int64) (result []ContractItem, err error) {
 	result = make([]ContractItem, 0)
-	url := fmt.Sprintf("%s/characters/%d/contracts/%d/items/?token=%s", cf.baseURL, characterID, contractID, cf.token.AccessToken)
+	url := fmt.Sprintf("%s/characters/%d/contracts/%d/items/", cf.baseURL, characterID, contractID)
 	err = fetchURL(cf.client, url, &result)
 	return
 }
