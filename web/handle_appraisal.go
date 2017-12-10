@@ -162,7 +162,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	var status *esi.ContractStatus = nil
 	if user != nil && appraisal.OwnerID == user.CharacterID {
-		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r)).GetContractStatus(user, appraisal)
+		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.OauthToken(r)).GetContractStatus(user, appraisal)
 	}
 
 	// Render the new appraisal to the screen (there is no redirect here, we set the URL using javascript later)
@@ -234,7 +234,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 
 	var status *esi.ContractStatus = nil
 	if user != nil && appraisal.OwnerID == user.CharacterID {
-		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r)).GetContractStatus(user, appraisal)
+		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.OauthToken(r)).GetContractStatus(user, appraisal)
 	}
 
 	ctx.render(r, w, "appraisal.html",

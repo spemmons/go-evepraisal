@@ -3,6 +3,7 @@ package web
 import (
 	"html/template"
 	"net/http"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -31,6 +32,11 @@ func NewContext(app *evepraisal.App) *Context {
 	return ctx
 }
 
-func (ctx *Context) AccessToken(r *http.Request) string {
-	return ctx.getSessionValueWithDefault(r, "access_token", "")
+func (ctx *Context) OauthToken(r *http.Request) (token *oauth2.Token) {
+	token = new(oauth2.Token)
+	token.AccessToken = ctx.getSessionValueWithDefault(r, "access_token", "")
+	token.RefreshToken = ctx.getSessionValueWithDefault(r, "refresh_token", "")
+	token.TokenType = ctx.getSessionValueWithDefault(r, "token_type", "")
+	token.Expiry, _ = ctx.getSessionValue(r, "expiry").(time.Time)
+	return
 }

@@ -38,12 +38,11 @@ func (ctx *Context) HandleUserHistoryAppraisals(w http.ResponseWriter, r *http.R
 
 	var history = make([]StatusedAppraisal,len(cleanAppraisals))
 	if len(history) > 0 {
-		cf := esi.NewContractFetcher(ctx.App.TypeDB, ctx.AccessToken(r))
+		cf := esi.NewContractFetcher(ctx.App.TypeDB, ctx.OauthToken(r))
 		contracts, _ := cf.GetContracts(user.CharacterID)
 		for index, appraisal := range cleanAppraisals {
 			history[index].Appraisal = appraisal
 			history[index].Status = *cf.EvaluateContract(user, &appraisal, contracts)
-			fmt.Println()
 		}
 	}
 

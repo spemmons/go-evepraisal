@@ -178,7 +178,7 @@ func appMain() {
 		webContext.OauthConfig = &oauth2.Config{
 			ClientID:     viper.GetString("sso-client-id"),
 			ClientSecret: viper.GetString("sso-client-secret"),
-			Scopes:       []string{"esi-contracts.read_character_contracts.v1"},
+			Scopes:       []string{"esi-contracts.read_character_contracts.v1","esi-universe.read_structures.v1"},
 			Endpoint: oauth2.Endpoint{
 				AuthURL:  viper.GetString("sso-authorize-url"),
 				TokenURL: viper.GetString("sso-token-url"),

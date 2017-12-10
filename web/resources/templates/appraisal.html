@@ -68,14 +68,17 @@
         </p>
     {{else if eq .Page.Status.Summary "accepted"}}
         <h1 class="buyback">CONGRATULATIONS! Your contract was accepted!</h1>
+        <p>Your contract was found in <b class="buyback">{{ .Page.Status.Contract.LocationName }}</b>. </p>
     {{else}}
         {{if eq .Page.Status.Summary "valid"}}
             <h1 class="buyback">VALID CONTRACT FOUND!</h1>
+            <p>Your contract was found in <b class="buyback">{{ .Page.Status.Contract.LocationName }}</b>. </p>
             <p>The IP-Org leadership have been notified and your contract should be accepted soon.</p>
         {{else}}
             <h1 class="text-danger">NOTICE</h1>
             {{if .Page.Status.Contract}}
-                <p>A contract for this Buyback Offer with the Description <span class="buyback">{{.Page.Status.Title}}</span> was found, but it is <i class="text-danger">{{.Page.Status.Summary}}</i></p>
+                <p>Your contract was found in <b class="buyback">{{ .Page.Status.Contract.LocationName }}</b>. </p>
+                <p>However, it is <i class="text-danger">{{.Page.Status.Summary}}</i></p>
             {{else}}
                 <p>This Buyback Offer is <i class="text-danger">{{.Page.Status.Summary}}</i></p>
             {{end}}
