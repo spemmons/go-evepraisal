@@ -6,10 +6,6 @@ import (
 	"time"
 
 	"github.com/evepraisal/go-evepraisal"
-	"github.com/sethgrid/pester"
-	"github.com/spf13/viper"
-	"github.com/evepraisal/go-evepraisal/typedb"
-	"net/http"
 )
 
 const ValidAssignee = 98497376  // NOTE: ID for 0.0 Massive Production
@@ -59,48 +55,32 @@ type ContractStatus struct {
 	Errors   []string
 }
 
-type ContractFetcher struct {
-	typedb  typedb.TypeDB
-	client  *pester.Client
-	baseURL string
-}
-
-func NewContractFetcher(typedb typedb.TypeDB, httpClient *http.Client) *ContractFetcher {
-	client := pester.NewExtendedClient(httpClient)
-	client.Concurrency = 5
-	client.Timeout = 30 * time.Second
-	client.Backoff = pester.ExponentialJitterBackoff
-	client.MaxRetries = 10
-
-	return &ContractFetcher{typedb, client, viper.GetString("esi_baseurl")}
-}
-
-func (cf *ContractFetcher) GetContracts(characterID int64) (result []Contract, err error) {
+func (of *OauthFetcher) GetContracts(characterID int64) (result []Contract, err error) {
 	result = make([]Contract, 0)
-	url := fmt.Sprintf("%s/characters/%d/contracts/", cf.baseURL, characterID)
-	err = fetchURL(cf.client, url, &result)
+	url := fmt.Sprintf("%s/characters/%d/contracts/", of.baseURL, characterID)
+	err = fetchURL(of.client, url, &result)
 	return
 }
 
-func (cf *ContractFetcher) GetContractItems(characterID int64, contractID int64) (result []ContractItem, err error) {
+func (of *OauthFetcher) GetContractItems(characterID int64, contractID int64) (result []ContractItem, err error) {
 	result = make([]ContractItem, 0)
-	url := fmt.Sprintf("%s/characters/%d/contracts/%d/items/", cf.baseURL, characterID, contractID)
-	err = fetchURL(cf.client, url, &result)
+	url := fmt.Sprintf("%s/characters/%d/contracts/%d/items/", of.baseURL, characterID, contractID)
+	err = fetchURL(of.client, url, &result)
 	return
 }
 
-func (cf *ContractFetcher) GetContractStatus(user *evepraisal.User, appraisal *evepraisal.Appraisal) *ContractStatus {
-	contracts, err := cf.GetContracts(user.CharacterID)
+func (of *OauthFetcher) GetContractStatus(user *evepraisal.User, appraisal *evepraisal.Appraisal) *ContractStatus {
+	contracts, err := of.GetContracts(user.CharacterID)
 	if err != nil {
 		fmt.Printf("CONTRACT ERROR: ", err)
-		return &ContractStatus{cf.BuybackTitle(user, appraisal.ID), "error", nil, []string{err.Error()}}
+		return &ContractStatus{of.BuybackTitle(user, appraisal.ID), "error", nil, []string{err.Error()}}
 	}
 
-	return cf.EvaluateContract(user, appraisal, contracts)
+	return of.EvaluateContract(user, appraisal, contracts)
 }
 
-func (cf *ContractFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepraisal.Appraisal, contracts []Contract) *ContractStatus {
-	title := cf.BuybackTitle(user, appraisal.ID)
+func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepraisal.Appraisal, contracts []Contract) *ContractStatus {
+	title := of.BuybackTitle(user, appraisal.ID)
 
 	var summary = "not_found"
 	errors := []string{}
@@ -113,11 +93,11 @@ func (cf *ContractFetcher) EvaluateContract(user *evepraisal.User, appraisal *ev
 
 	var contract *Contract
 	if summary != "invalid" {
-		contract = cf.findMatchingContract(title, contracts)
+		contract = of.findMatchingContract(title, contracts)
 		if contract != nil {
 			summary = contract.Status
 
-			errors = cf.validateContract(user, appraisal, contract)
+			errors = of.validateContract(user, appraisal, contract)
 
 			if summary == "outstanding" {
 				if len(errors) > 0 {
@@ -132,7 +112,7 @@ func (cf *ContractFetcher) EvaluateContract(user *evepraisal.User, appraisal *ev
 	return &ContractStatus{title, summary, contract, errors}
 }
 
-func (cf *ContractFetcher) findMatchingContract(title string, contracts []Contract) *Contract {
+func (of *OauthFetcher) findMatchingContract(title string, contracts []Contract) *Contract {
 	for _, contract := range contracts {
 		if contract.Title == title {
 			return &contract
@@ -141,11 +121,11 @@ func (cf *ContractFetcher) findMatchingContract(title string, contracts []Contra
 	return nil
 }
 
-func (cf *ContractFetcher) BuybackTitle(user *evepraisal.User, appraisalID string) string {
+func (of *OauthFetcher) BuybackTitle(user *evepraisal.User, appraisalID string) string {
 	return fmt.Sprintf("Buyback for %v: %s", user.CharacterName, appraisalID)
 }
 
-func (cf *ContractFetcher) validateContract(user *evepraisal.User, appraisal *evepraisal.Appraisal, contract *Contract) (errors []string) {
+func (of *OauthFetcher) validateContract(user *evepraisal.User, appraisal *evepraisal.Appraisal, contract *Contract) (errors []string) {
 	errors = []string{}
 
 	if contract.Type != "item_exchange" {
@@ -172,12 +152,12 @@ func (cf *ContractFetcher) validateContract(user *evepraisal.User, appraisal *ev
 		return
 	}
 
-	errors = append(errors, cf.validateContractLocation(contract)...)
+	errors = append(errors, of.validateContractLocation(contract)...)
 	if len(errors) > 0 {
 		return
 	}
 
-	errors = append(errors, cf.validateContractItems(user, appraisal, contract)...)
+	errors = append(errors, of.validateContractItems(user, appraisal, contract)...)
 	if len(errors) > 0 {
 		return
 	}
@@ -185,9 +165,9 @@ func (cf *ContractFetcher) validateContract(user *evepraisal.User, appraisal *ev
 	return
 }
 
-func (cf *ContractFetcher) validateContractItems(user *evepraisal.User, appraisal *evepraisal.Appraisal, contract *Contract) (errors []string) {
+func (of *OauthFetcher) validateContractItems(user *evepraisal.User, appraisal *evepraisal.Appraisal, contract *Contract) (errors []string) {
 	errors = make([]string, 0)
-	contractItems, err := cf.GetContractItems(user.CharacterID, contract.ContractID)
+	contractItems, err := of.GetContractItems(user.CharacterID, contract.ContractID)
 	if err != nil {
 		errors = append(errors, err.Error())
 	} else {
@@ -220,7 +200,7 @@ func (cf *ContractFetcher) validateContractItems(user *evepraisal.User, appraisa
 		}
 
 		for typeID, _ := range unexpectedItems {
-			evetype, found := cf.typedb.GetTypeByID(typeID)
+			evetype, found := of.typedb.GetTypeByID(typeID)
 			if found {
 				errors = append(errors, fmt.Sprintf("Unexpected %s found in contract", evetype.Name))
 			} else {
@@ -231,8 +211,8 @@ func (cf *ContractFetcher) validateContractItems(user *evepraisal.User, appraisa
 	return
 }
 
-func (cf *ContractFetcher) validateContractLocation(contract *Contract) (errors []string) {
-	systemID, name, found := cf.FindLocation(contract.StartLocationID)
+func (of *OauthFetcher) validateContractLocation(contract *Contract) (errors []string) {
+	systemID, name, found := of.FindLocation(contract.StartLocationID)
 	if !found {
 		errors = append(errors, "Contract location cannot be found")
 		return
@@ -240,12 +220,12 @@ func (cf *ContractFetcher) validateContractLocation(contract *Contract) (errors 
 
 	contract.LocationName = name
 
-	if regionID, _ := cf.FindRegionForSystemID(systemID); regionID != ValidRegion {
+	if regionID, _ := of.FindRegionForSystemID(systemID); regionID != ValidRegion {
 		errors = append(errors, "Contract must be in Esoteria")
 		return
 	}
 
-	if allianceID, _ := cf.FindAllianceForSystemID(systemID); allianceID != ValidAlliance {
+	if allianceID, _ := of.FindAllianceForSystemID(systemID); allianceID != ValidAlliance {
 		errors = append(errors, "Contract must be in a system controlled by TEST")
 		return
 	}

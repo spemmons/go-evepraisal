@@ -131,7 +131,12 @@
 
     <div>
         <h4 class="buyback">
-            <span class="nowrap">{{ prettybignumber .Page.Appraisal.BuybackOffer }} <small class="buyback">Buyback Offer for Reprocessed/Refined Minerals</small></span>
+            <span class="nowrap">{{ prettybignumber .Page.Appraisal.BuybackOffer }}
+                <small class="buyback">
+                    Buyback Offer for Reprocessed/Refined Minerals
+                    {{if .Page.Appraisal.IsBuybackCapped }}(Capped at {{ .Page.Appraisal.BuybackCap }}% of Jita Buy price){{end}}
+                </small>
+            </span>
         </h4>
     </div>
 

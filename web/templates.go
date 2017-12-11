@@ -41,11 +41,12 @@ type namedThing struct {
 
 var selectableMarkets = []namedThing{
 	{Name: "jita", DisplayName: "Jita"},
-	{Name: "universe", DisplayName: "Universe"},
-	{Name: "amarr", DisplayName: "Amarr"},
-	{Name: "dodixie", DisplayName: "Dodixie"},
-	{Name: "hek", DisplayName: "Hek"},
-	{Name: "rens", DisplayName: "Rens"},
+	// NOTE - only include JITA for IP-Org
+	//{Name: "universe", DisplayName: "Universe"},
+	//{Name: "amarr", DisplayName: "Amarr"},
+	//{Name: "dodixie", DisplayName: "Dodixie"},
+	//{Name: "hek", DisplayName: "Hek"},
+	//{Name: "rens", DisplayName: "Rens"},
 }
 
 var selectableVisibilities = []namedThing{

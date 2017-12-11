@@ -9,22 +9,22 @@ import (
 )
 
 func fetchURL(client *pester.Client, url string, r interface{}) error {
-//	fmt.Printf("Fetching %s...", url)
+	//fmt.Printf("Fetching %s...", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-//		fmt.Printf("ERROR: %s\n", err.Error())
+		//fmt.Printf("ERROR: %s\n", err.Error())
 		return err
 	}
 
 	req.Header.Add("User-Agent", "go-evepraisal")
 	resp, err := client.Do(req)
 	if err != nil {
-//		fmt.Printf("ERROR: %s\n", err.Error())
+		//fmt.Printf("ERROR: %s\n", err.Error())
 		return err
 	}
 
 	if resp.StatusCode != 200 {
-//		fmt.Printf("INVALID STATUS: %s\n", resp.Status)
+		//fmt.Printf("INVALID STATUS: %s\n", resp.Status)
 		return fmt.Errorf("Error talking to esi: %s", resp.Status)
 	}
 

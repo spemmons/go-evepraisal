@@ -118,6 +118,28 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	user := ctx.GetCurrentUser(r)
 
+	buybackCap := 0.0
+	if user != nil {
+		affiliation, found := esi.NewOauthFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetCharacterAffiliation(user.CharacterID)
+		if !found {
+			ctx.renderErrorPageWithRoot(r, w, http.StatusBadRequest, "Invalid character", "Unknown character.", errorRoot)
+			return
+		}
+
+		if affiliation.AllianceID != esi.ValidAlliance {
+			ctx.renderErrorPageWithRoot(r, w, http.StatusBadRequest, "Invalid character", "Not in TEST alliance.", errorRoot)
+			return
+		}
+
+		buybackCap = evepraisal.BuybackCapTEST
+		for _, corpID := range evepraisal.IPOrgCorporations {
+			if corpID == affiliation.CorporationID {
+				buybackCap = evepraisal.BuybackCapIPOrg
+				break;
+			}
+		}
+	}
+
 	visibility := r.FormValue("visibility")
 	private := false
 	if visibility == "private" && user != nil {
@@ -135,6 +157,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	appraisal.BuybackCap = buybackCap
 	appraisal.User = user
 	appraisal.Private = private
 	appraisal.PrivateToken = NewPrivateAppraisalToken()
@@ -162,7 +185,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	var status *esi.ContractStatus = nil
 	if user != nil && appraisal.OwnerID == user.CharacterID {
-		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetContractStatus(user, appraisal)
+		status = esi.NewOauthFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetContractStatus(user, appraisal)
 	}
 
 	// Render the new appraisal to the screen (there is no redirect here, we set the URL using javascript later)
@@ -234,7 +257,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 
 	var status *esi.ContractStatus = nil
 	if user != nil && appraisal.OwnerID == user.CharacterID {
-		status = esi.NewContractFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetContractStatus(user, appraisal)
+		status = esi.NewOauthFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetContractStatus(user, appraisal)
 	}
 
 	ctx.render(r, w, "appraisal.html",

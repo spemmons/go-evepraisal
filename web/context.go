@@ -37,6 +37,14 @@ func (ctx *Context) OauthClient(r *http.Request) *http.Client {
 	token.AccessToken = ctx.getSessionValueWithDefault(r, "access_token", "")
 	token.RefreshToken = ctx.getSessionValueWithDefault(r, "refresh_token", "")
 	token.TokenType = ctx.getSessionValueWithDefault(r, "token_type", "")
-	token.Expiry, _ = ctx.getSessionValue(r, "expiry").(time.Time)
-	return ctx.OauthConfig.Client(r.Context(),token)
+	token.Expiry, _ = time.Parse(time.RFC3339,ctx.getSessionValue(r, "expiry").(string))
+
+	newToken, err := ctx.OauthConfig.TokenSource(r.Context(), token).Token()
+	if err == nil {
+		token = newToken
+	}
+
+	client := ctx.OauthConfig.Client(r.Context(),token)
+
+	return client
 }

@@ -5,10 +5,44 @@ import (
 	"github.com/evepraisal/go-evepraisal/typedb"
 )
 
+const BuybackCapTEST = 105
+const BuybackCapIPOrg = 125
+
+var IPOrgCorporations = []int64{98210135, 728517421} // IP, OMD
+
+func (appraisal *Appraisal) BuybackOffer() float64 {
+	buybackOffer := appraisal.Buyback.Totals.Buy
+	if appraisal.BuybackCap > 0 {
+		maxBuyback := appraisal.Original.Totals.Buy * appraisal.BuybackCap / 100
+		if maxBuyback < buybackOffer {
+			buybackOffer = maxBuyback
+		}
+	}
+	return float64(int64(buybackOffer + 0.99));
+}
+
+func (appraisal *Appraisal) IsBuybackCapped() bool {
+	return appraisal.BuybackOffer() < appraisal.Buyback.Totals.Buy
+}
+
+func (appraisal *Appraisal) BuybackReady() bool {
+	if len(appraisal.Original.Items) == 0 {
+		return false
+	}
+
+	for _, item := range appraisal.Original.Items {
+		if item.Rejected {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems []AppraisalItem, buyback ItemsAndTotals) {
 	buybackMap := make(map[string]*AppraisalItem)
 
-	modifiedItems = make([]AppraisalItem,0,len(originalItems))
+	modifiedItems = make([]AppraisalItem, 0, len(originalItems))
 	for _, item := range originalItems {
 		if !item.Rejected {
 			itemMap := make(map[string]*AppraisalItem)
@@ -21,7 +55,7 @@ func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems [
 			sort.Sort(ByQuantity(item.Buyback.Items))
 			app.priceAppraisalItems(item.Buyback.Items, &item.Buyback.Totals, "jita")
 		}
-		modifiedItems = append(modifiedItems,item)
+		modifiedItems = append(modifiedItems, item)
 	}
 
 	for _, bbitem := range buybackMap {
@@ -40,12 +74,12 @@ func (app *App) collectBuybackItems(itemMap map[string]*AppraisalItem, qualifier
 		app.updateBuybackItems(itemMap, qualifier, efficiency, t.Name, t.ID, portion)
 	} else {
 		if t.CategoryID == AsteroidCategoryID {
-			qualifier, efficiency = "REFINE",85
+			qualifier, efficiency = "REFINE", 85
 		} else {
-			qualifier, efficiency = "REPROCESS",55
+			qualifier, efficiency = "REPROCESS", 55
 		}
 		for _, material := range t.Materials {
-			app.collectBuybackItems(itemMap, qualifier, efficiency, material.TypeID, portion * material.Quantity)
+			app.collectBuybackItems(itemMap, qualifier, efficiency, material.TypeID, portion*material.Quantity)
 		}
 	}
 

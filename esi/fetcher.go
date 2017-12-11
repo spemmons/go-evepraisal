@@ -33,22 +33,23 @@ var SpecialRegions = []struct {
 		// 10000002
 		name:     "jita",
 		stations: []int64{60003466, 60003760, 60003757, 60000361, 60000451, 60004423, 60002959, 60003460, 60003055, 60003469, 60000364, 60002953, 60000463, 60003463},
-	}, {
-		// 10000043
-		name:     "amarr",
-		stations: []int64{60008950, 60002569, 60008494},
-	}, {
-		// 10000032
-		name:     "dodixie",
-		stations: []int64{60011866, 60001867},
-	}, {
-		// 10000042
-		name:     "hek",
-		stations: []int64{60005236, 60004516, 60015140, 60005686, 60011287, 60005236},
-	}, {
-		// 10000030
-		name:     "rens",
-		stations: []int64{60004588, 60005725, 60004594, 60012727, 60012721, 60012724, 60009106},
+	// NOTE - only include JITA for IP-Org
+	//}, {
+	//	// 10000043
+	//	name:     "amarr",
+	//	stations: []int64{60008950, 60002569, 60008494},
+	//}, {
+	//	// 10000032
+	//	name:     "dodixie",
+	//	stations: []int64{60011866, 60001867},
+	//}, {
+	//	// 10000042
+	//	name:     "hek",
+	//	stations: []int64{60005236, 60004516, 60015140, 60005686, 60011287, 60005236},
+	//}, {
+	//	// 10000030
+	//	name:     "rens",
+	//	stations: []int64{60004588, 60005725, 60004594, 60012727, 60012721, 60012724, 60009106},
 	},
 }
 
@@ -106,7 +107,7 @@ func regionNames() []string {
 
 func (p *PriceFetcher) runOnce() {
 	log.Println("Fetch market data")
-	priceMap, err := p.FetchOrderData(p.client, p.baseURL, []int{10000002, 10000042, 10000027, 10000032, 10000043, 10000030})
+	priceMap, err := p.FetchOrderData(p.client, p.baseURL, []int{10000002}) // NOTE - only use JITA - , 10000042, 10000027, 10000032, 10000043, 10000030})
 	if err != nil {
 		log.Println("ERROR: fetching market data: ", err)
 		return

@@ -35,15 +35,13 @@ type UniverseStructure struct {
 	TypeID   int64 `json:"type_id,omitempty"` //type_id (integer, optional): type_id integer ,
 }
 
-func (cf *ContractFetcher) FindLocation(locationID int64) (int64, string, bool) {
-	fmt.Printf("LOCATION: %v\n", locationID)
-
-	station, found := cf.getUniverseStation(locationID)
+func (of *OauthFetcher) FindLocation(locationID int64) (int64, string, bool) {
+	station, found := of.getUniverseStation(locationID)
 	if found {
 		return station.SystemID, station.Name, true
 	}
 
-	structure, found := cf.getUniverseStructure(locationID)
+	structure, found := of.getUniverseStructure(locationID)
 	if found {
 		return structure.SystemID, structure.Name, true
 	}
@@ -51,13 +49,13 @@ func (cf *ContractFetcher) FindLocation(locationID int64) (int64, string, bool) 
 	return 0, "", false
 }
 
-func (cf *ContractFetcher) FindRegionForSystemID(systemID int64) (int64, bool) {
-	system, found := cf.getUniverseSystem(systemID)
+func (of *OauthFetcher) FindRegionForSystemID(systemID int64) (int64, bool) {
+	system, found := of.getUniverseSystem(systemID)
 	if !found {
 		return 0, false
 	}
 
-	constellation, found := cf.getUniverseConstellation(system.ConstellationID)
+	constellation, found := of.getUniverseConstellation(system.ConstellationID)
 	if !found {
 		return 0, false
 	}
@@ -67,13 +65,13 @@ func (cf *ContractFetcher) FindRegionForSystemID(systemID int64) (int64, bool) {
 
 var constellationMap = map[int64]*UniverseConstellation{}
 
-func (cf *ContractFetcher) getUniverseConstellation(constellationID int64) (*UniverseConstellation, bool) {
+func (of *OauthFetcher) getUniverseConstellation(constellationID int64) (*UniverseConstellation, bool) {
 	var constellation *UniverseConstellation
 	constellation, found := constellationMap[constellationID]
 	if !found {
 		constellation = new(UniverseConstellation)
-		url := fmt.Sprintf("%s/universe/constellations/%d/", cf.baseURL, constellationID)
-		_ = fetchURL(cf.client, url, &constellation)
+		url := fmt.Sprintf("%s/universe/constellations/%d/", of.baseURL, constellationID)
+		_ = fetchURL(of.client, url, &constellation)
 		constellationMap[constellationID] = constellation
 	}
 	return constellation, constellation.ConstellationID != 0
@@ -81,13 +79,13 @@ func (cf *ContractFetcher) getUniverseConstellation(constellationID int64) (*Uni
 
 var systemMap = map[int64]*UniverseSystem{}
 
-func (cf *ContractFetcher) getUniverseSystem(systemID int64) (*UniverseSystem, bool) {
+func (of *OauthFetcher) getUniverseSystem(systemID int64) (*UniverseSystem, bool) {
 	var system *UniverseSystem
 	system, found := systemMap[systemID]
 	if !found {
 		system = new(UniverseSystem)
-		url := fmt.Sprintf("%s/universe/systems/%d/", cf.baseURL, systemID)
-		_ = fetchURL(cf.client, url, &system)
+		url := fmt.Sprintf("%s/universe/systems/%d/", of.baseURL, systemID)
+		_ = fetchURL(of.client, url, &system)
 		systemMap[systemID] = system
 	}
 	return system, system.SystemID != 0
@@ -95,33 +93,32 @@ func (cf *ContractFetcher) getUniverseSystem(systemID int64) (*UniverseSystem, b
 
 var stationMap = map[int64]*UniverseStation{}
 
-func (cf *ContractFetcher) getUniverseStation(stationID int64) (*UniverseStation, bool) {
+func (of *OauthFetcher) getUniverseStation(stationID int64) (*UniverseStation, bool) {
 	var station *UniverseStation
 	station, found := stationMap[stationID]
 	if !found {
 		station = new(UniverseStation)
-		url := fmt.Sprintf("%s/universe/stations/%d/", cf.baseURL, stationID)
-		_ = fetchURL(cf.client, url, &station)
+		url := fmt.Sprintf("%s/universe/stations/%d/", of.baseURL, stationID)
+		_ = fetchURL(of.client, url, &station)
 		stationMap[stationID] = station
 	}
-	fmt.Printf("STATION: %+v\n", station)
 	return station, station.SystemID != 0
 }
 
-func (cf *ContractFetcher) getUniverseStructure(locationID int64) (*UniverseStructure, bool) {
+func (of *OauthFetcher) getUniverseStructure(locationID int64) (*UniverseStructure, bool) {
 	result := new(UniverseStructure)
-	url := fmt.Sprintf("%s/universe/structures/%d/", cf.baseURL, locationID)
-	err := fetchURL(cf.client, url, result)
+	url := fmt.Sprintf("%s/universe/structures/%d/", of.baseURL, locationID)
+	err := fetchURL(of.client, url, result)
 	return result, err == nil
 }
 
 var sovMap = map[int64]SystemSov{}
 
-func (cf *ContractFetcher) FindAllianceForSystemID(systemID int64) (int64, bool) {
+func (of *OauthFetcher) FindAllianceForSystemID(systemID int64) (int64, bool) {
 	if len(sovMap) == 0 {
 		systems := make([]SystemSov, 0)
-		url := fmt.Sprintf("%s/sovereignty/map/", cf.baseURL)
-		err := fetchURL(cf.client, url, &systems)
+		url := fmt.Sprintf("%s/sovereignty/map/", of.baseURL)
+		err := fetchURL(of.client, url, &systems)
 		if err != nil {
 			fmt.Printf("SOV MAP ERR: %v\n", err)
 		} else {

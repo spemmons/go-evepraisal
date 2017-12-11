@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/evepraisal/go-evepraisal"
 
@@ -86,7 +87,7 @@ func (ctx *Context) HandleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	ctx.setSessionValue(r, w, "access_token", tok.AccessToken)
 	ctx.setSessionValue(r, w, "refresh_token", tok.RefreshToken)
 	ctx.setSessionValue(r, w, "token_type", tok.TokenType)
-	ctx.setSessionValue(r, w, "expiry", tok.Expiry)
+	ctx.setSessionValue(r, w, "expiry", tok.Expiry.Format(time.RFC3339))
 	log.Printf("User logged in: %s", user.CharacterName)
 
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
