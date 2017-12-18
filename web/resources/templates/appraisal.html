@@ -57,10 +57,10 @@
         <p>To submit this Buyback Offer, you will need to create a contract with these in the following way:</p>
             <ol>
                 <li>Contract Type: <i class="buyback">Item Exchange</i></li>
-                <li>Availability: <i><span class="buyback">Private</span> to <span class="buyback">0.0 Massive Production</span>; you can use the corp ticket <span class="buyback">0MP</span></i></li>
-                <li>I will receive: <i class="buyback">{{commaf .Page.Appraisal.BuybackOffer}}</i> also called Price</li>
+                <li>Availability: <i><span class="buyback">Private</span> to <span class="buyback">0.0 Massive Production</span>; you can use the corp ticket <span id="corpTicker" class="buyback" aria-hidden="true">0MP</span></i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('corpTicker')">&nbsp;</span></li>
+                <li>I will receive: <i class="buyback" id="contractPrice">{{commaf .Page.Appraisal.BuybackOffer}}</i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractPrice')">&nbsp;</span> also called Price</li>
                 <li>Expiration: <i class="buyback">2 Weeks</i> or longer</li>
-                <li>Description: <i class="buyback">{{ .Page.Status.Title }}</i></li>
+                <li>Description: <i class="buyback" id="contractTitle">{{ .Page.Status.Title }}</i> &nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractTitle')">&nbsp;</span></li>
             </ol>
         <p>
             <a role="button" class="btn btn-primary" type="button" href="{{.Page.Appraisal | appraisallink}}">CHECK CONTRACT NOW</a></button>
@@ -88,6 +88,10 @@
                 <li class="text-danger">{{$error}}</li>
             {{end}}
             </ul>
+            <p>
+                <a role="button" class="btn btn-primary" type="button" href="{{.Page.Appraisal | appraisallink}}">RE-CHECK CONTRACT NOW</a></button>
+                NOTE: CCP only updates contract data every 5 minutes. Please wait 5 minutes after creating your contract. Sorry, mate!
+            </p>
         {{end}}
     {{end}}
 </div>
@@ -236,9 +240,20 @@
              5: { sorter: 'digit', sortInitialOrder: 'desc' }
           }
         });
-        $('[data-toggle="tooltip"]').tooltip()
+        $('[data-toggle="tooltip"]').tooltip();
       });
+
+      function copyToClipboard(name) {
+          var source = document.getElementById(name);
+          var buffer = document.getElementById("clipboardBuffer");
+          buffer.value = source.innerText;
+          buffer.style.visibility = 'visible';
+          buffer.select();
+          document.execCommand("copy");
+          buffer.style.visibility = 'hidden';
+      }
     </script>
+    <input style="visibility: hidden;" type="text" id="clipboardBuffer">
   </div>
 
   <div id="buyback_details_summary" class="modal fade" role="dialog">

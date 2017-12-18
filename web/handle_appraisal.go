@@ -18,6 +18,7 @@ import (
 	"github.com/evepraisal/go-evepraisal"
 	"github.com/evepraisal/go-evepraisal/esi"
 	"github.com/evepraisal/go-evepraisal/legacy"
+	"github.com/evepraisal/go-evepraisal/discord"
 	"github.com/go-zoo/bone"
 )
 
@@ -258,6 +259,21 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 	var status *esi.ContractStatus = nil
 	if user != nil && appraisal.OwnerID == user.CharacterID {
 		status = esi.NewOauthFetcher(ctx.App.TypeDB, ctx.OauthClient(r)).GetContractStatus(user, appraisal)
+		state, _, found := ctx.App.AppraisalDB.GetNotifiedState(appraisalID)
+		if!found || state != status.Summary {
+			switch status.Summary {
+			case "valid":
+				discord.PostMessage(fmt.Sprintf("Contract '%s' is VALID and ready for acceptance!", status.Title))
+			case "invalid":
+				discord.PostMessage(fmt.Sprintf("Contract '%s' is INVALID and should be rejected!", status.Title))
+			case "deleted":
+				if state == "invalid" {
+					discord.PostMessage(fmt.Sprintf("Contract '%s' was DELETED and can be forgotten!", status.Title))
+				}
+			}
+
+			ctx.App.AppraisalDB.SetNotifiedState(appraisalID, status.Summary)
+		}
 	}
 
 	ctx.render(r, w, "appraisal.html",

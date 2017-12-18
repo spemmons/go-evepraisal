@@ -3,6 +3,7 @@ package evepraisal
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/evepraisal/go-evepraisal/parsers"
 	"github.com/evepraisal/go-evepraisal/typedb"
@@ -29,6 +30,8 @@ type CacheDB interface {
 type AppraisalDB interface {
 	PutNewAppraisal(appraisal *Appraisal) error
 	GetAppraisal(appraisalID string) (*Appraisal, error)
+	GetNotifiedState(appraisalID string) (status string, timestamp *time.Time, found bool)
+	SetNotifiedState(appraisalID string, status string) (changed bool)
 	LatestAppraisals(count int, kind string) ([]Appraisal, error)
 	LatestAppraisalsByUser(user User, count int, kind string, after string) ([]Appraisal, error)
 	TotalAppraisals() (int64, error)

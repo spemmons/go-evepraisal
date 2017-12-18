@@ -10,3 +10,6 @@ TODO:
 Weird results to look into:
  - Looks like it's an asset list: https://evepraisal.com/a/bwpy0.raw
 
+123	 Drone Transceiver
+145	 Logic Circuit
+145	 Power Circuit

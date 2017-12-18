@@ -51,6 +51,16 @@ func NewAppraisalDB(filename string) (evepraisal.AppraisalDB, error) {
 			return err
 		}
 
+		_, err = tx.CreateBucket([]byte("appraisals-notified-time"))
+		if err != nil && err != bolt.ErrBucketExists {
+			return err
+		}
+
+		_, err = tx.CreateBucket([]byte("appraisals-notified-status"))
+		if err != nil && err != bolt.ErrBucketExists {
+			return err
+		}
+
 		return nil
 	})
 
@@ -161,6 +171,64 @@ func (db *AppraisalDB) getAppraisal(appraisalID string) (*evepraisal.Appraisal, 
 	})
 
 	return appraisal, err
+}
+
+func (db *AppraisalDB) GetNotifiedState(appraisalID string) (status string, timestamp *time.Time, found bool) {
+	status = ""
+	timestamp = nil
+	found = false
+
+	dbID, err := EncodeDBID(appraisalID)
+	if err == nil {
+		err = db.DB.View(func(tx *bolt.Tx) error {
+			buf := tx.Bucket([]byte("appraisals-notified-time")).Get(dbID)
+			if buf != nil {
+				timestamp = new(time.Time)
+				*timestamp = time.Unix(int64(binary.BigEndian.Uint64(buf)), 0)
+
+				buf = tx.Bucket([]byte("appraisals-notified-status")).Get(dbID)
+				if buf != nil {
+					status = string(buf)
+					found = true
+				}
+			}
+
+			return nil
+		})
+	}
+
+	if err != nil {
+		log.Printf("WARNING: Error getting appraisal notification: %s", err.Error())
+	}
+	return
+}
+
+func (db *AppraisalDB) SetNotifiedState(appraisalID string, status string) bool {
+	prevStatus, _, found := db.GetNotifiedState(appraisalID)
+	if found && status == prevStatus {
+		return false
+	}
+
+	dbID, err := EncodeDBID(appraisalID)
+	if err == nil {
+		now := time.Now().Unix()
+		encodedNow := make([]byte, 8)
+		binary.BigEndian.PutUint64(encodedNow, uint64(now))
+		err = db.DB.Update(func(tx *bolt.Tx) error {
+			return tx.Bucket([]byte("appraisals-notified-time")).Put(dbID, encodedNow)
+		})
+
+		err = db.DB.Update(func(tx *bolt.Tx) error {
+			return tx.Bucket([]byte("appraisals-notified-status")).Put(dbID, []byte(status))
+		})
+	}
+
+	if err != nil {
+		log.Printf("WARNING: Error saving appraisal notification: %s", err.Error())
+		return false
+	}
+
+	return true
 }
 
 func (db *AppraisalDB) LatestAppraisals(reqCount int, kind string) ([]evepraisal.Appraisal, error) {
@@ -287,6 +355,8 @@ func (db *AppraisalDB) DeleteAppraisal(appraisalID string) error {
 		byIDBucket := tx.Bucket([]byte("appraisals"))
 		byUserBucket := tx.Bucket([]byte("appraisals-by-user"))
 		lastUsedB := tx.Bucket([]byte("appraisals-last-used"))
+		notifiedTimeB := tx.Bucket([]byte("appraisals-notified-time"))
+		notifiedStatusB := tx.Bucket([]byte("appraisals-notified-status"))
 		dbID, err := EncodeDBID(appraisalID)
 		if err != nil {
 			return err
@@ -305,6 +375,16 @@ func (db *AppraisalDB) DeleteAppraisal(appraisalID string) error {
 		}
 
 		err = lastUsedB.Delete(dbID)
+		if err != nil {
+			return err
+		}
+
+		err = notifiedTimeB.Delete(dbID)
+		if err != nil {
+			return err
+		}
+
+		err = notifiedStatusB.Delete(dbID)
 		if err != nil {
 			return err
 		}
