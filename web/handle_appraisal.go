@@ -20,6 +20,7 @@ import (
 	"github.com/evepraisal/go-evepraisal/legacy"
 	"github.com/evepraisal/go-evepraisal/discord"
 	"github.com/go-zoo/bone"
+	"github.com/dustin/go-humanize"
 )
 
 var (
@@ -263,12 +264,12 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		if!found || state != status.Summary {
 			switch status.Summary {
 			case "valid":
-				discord.PostMessage(fmt.Sprintf("Contract '%s' is VALID and ready for acceptance!", status.Title))
+				discord.PostMessage(fmt.Sprintf("@bb Contract `%s` is VALID and ready for acceptance!\nCharacter: `%s`\nAmount: `%s`", status.Title, user.CharacterName, humanize.Commaf(appraisal.BuybackOffer())))
 			case "invalid":
-				discord.PostMessage(fmt.Sprintf("Contract '%s' is INVALID and should be rejected!", status.Title))
+				discord.PostMessage(fmt.Sprintf("@bb Contract `%s` is INVALID and should be rejected!", status.Title))
 			case "deleted":
 				if state == "invalid" {
-					discord.PostMessage(fmt.Sprintf("Contract '%s' was DELETED and can be forgotten!", status.Title))
+					discord.PostMessage(fmt.Sprintf("@bb Contract `%s` was DELETED and can be forgotten!", status.Title))
 				}
 			}
 
