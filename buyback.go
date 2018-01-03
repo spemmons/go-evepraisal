@@ -5,10 +5,21 @@ import (
 	"github.com/evepraisal/go-evepraisal/typedb"
 )
 
+const AsteroidCategoryID int64 = 25
+
+const MineralGroupID int64 = 18
+const MoonMaterialsGroupID int64 = 427
+const IceProductGroupID int64 = 423
+
+var BuybackGroups = []int64{MineralGroupID, MoonMaterialsGroupID, IceProductGroupID}
+
 const BuybackCapTEST = 105
 const BuybackCapIPOrg = 125
 
-var IPOrgCorporations = []int64{98210135, 728517421} // IP, OMD
+const CorpIP int64 = 98210135
+const Corp0MD int64 = 728517421
+
+var IPOrgCorporations = []int64{CorpIP, Corp0MD}
 
 func (appraisal *Appraisal) BuybackOffer() float64 {
 	buybackOffer := appraisal.Buyback.Totals.Buy
@@ -73,7 +84,7 @@ func (app *App) collectBuybackItems(itemMap map[string]*AppraisalItem, qualifier
 	if inBuybackGroup(t.GroupID) {
 		app.updateBuybackItems(itemMap, qualifier, efficiency, t.Name, t.ID, portion)
 	} else {
-		if t.CategoryID == AsteroidCategoryID {
+		if t.CategoryID == AsteroidCategoryID || t.GroupID == IceProductGroupID {
 			qualifier, efficiency = "REFINE", 85
 		} else {
 			qualifier, efficiency = "REPROCESS", 55
@@ -95,10 +106,6 @@ func (app *App) updateBuybackItems(itemMap map[string]*AppraisalItem, qualifier 
 	}
 }
 
-const MineralGroupID int64 = 18
-const MoonMaterialsGroupID int64 = 427
-const AsteroidCategoryID int64 = 25
-
 func (app *App) ableToBuyback(t typedb.EveType) bool {
 	if inBuybackGroup(t.GroupID) {
 		return true
@@ -115,7 +122,12 @@ func (app *App) ableToBuyback(t typedb.EveType) bool {
 }
 
 func inBuybackGroup(groupID int64) bool {
-	return groupID == MineralGroupID || groupID == MoonMaterialsGroupID;
+	for _, buybackGroupID := range BuybackGroups {
+		if groupID == buybackGroupID {
+			return true
+		}
+	}
+	return false
 }
 
 type ByQuantity []AppraisalItem
