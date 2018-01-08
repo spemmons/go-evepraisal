@@ -21,6 +21,7 @@ import (
 	"github.com/evepraisal/go-evepraisal/discord"
 	"github.com/go-zoo/bone"
 	"github.com/dustin/go-humanize"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -133,10 +134,10 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		buybackCap = evepraisal.BuybackCapTEST
+		buybackCap = viper.GetFloat64("buyback-cap-default")
 		for _, corpID := range evepraisal.IPOrgCorporations {
 			if corpID == affiliation.CorporationID {
-				buybackCap = evepraisal.BuybackCapIPOrg
+				buybackCap = viper.GetFloat64("buyback-cap-iporg")
 				break;
 			}
 		}

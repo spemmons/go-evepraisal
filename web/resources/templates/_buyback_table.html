@@ -4,6 +4,7 @@
         <th>Item</th>
         <th class="text-right">Qty</th>
         <th class="text-right"><span class="nowrap">Jita Price (buy)</span></th>
+        <th class="text-right"><span class="nowrap">Adjustment</span></th>
         <th class="text-right"><span class="nowrap">Buyback Total</span></th>
     </tr>
     </thead>
@@ -19,6 +20,9 @@
         <td class="numeric-cell text-right" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.Prices.Buy.Max | printf "%f"}}">
             {{commaf $item.Prices.Buy.Max}}
+        </td>
+        <td class="numeric-cell text-right" data-sort-value="-{{$item.Adjustment | printf "%f"}}">
+            {{$item.Adjustment}}%
         </td>
         <td class="numeric-cell text-right" data-sort-value="-{{$item.BuyTotal | printf "%f"}}">
             {{commaf $item.BuyTotal}}

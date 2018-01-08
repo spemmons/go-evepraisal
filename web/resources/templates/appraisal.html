@@ -167,7 +167,7 @@
             </a>
             {{end}}
             <a href="/item/{{$item.TypeID}}">{{$item.DisplayName}}{{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
-            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%)</span>{{end}}
+            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%{{if $item.IsAdjusted}} - ADJUSTED{{end}})</span>{{end}}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
@@ -204,14 +204,16 @@
         <tr>
           <td></td>
           <td colspan="3" class="text-right">Total Volume:<br/>
-            Total Sell Value:<br/>
-            Total Buy Value:<br/>
-            <span class="buyback">Buyback Value:</span><br/>
+            Total Jita Sell Value:<br/>
+            Total Jita Buy Value:<br/>
+            <span class="buyback">Total Buyback Value:</span><br/>
+            <span class="text-warning">Average Buyback Percentage:</span><br/>
           </td>
           <td class="text-right">{{commaf .Page.Appraisal.Original.Totals.Volume}}<br/>
             {{commaf .Page.Appraisal.Original.Totals.Sell}}<br/>
             {{commaf .Page.Appraisal.Original.Totals.Buy}}<br/>
-            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Page.Appraisal.BuybackOffer}}</span>
+            <span class="buyback" data-toggle="modal" data-target="#buyback_details_summary">{{commaf .Page.Appraisal.BuybackOffer}}</span><br/>
+            <span class="text-warning">{{.Page.Appraisal.AverageBuybackPercentage}}%</span><br/>
             </td>
           <td></td>
         </tr>

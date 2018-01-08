@@ -23,7 +23,8 @@ func (ctx *Context) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx.render(r, w, "main.html", struct {
 		TotalAppraisalCount int64 `json:"total_appraisal_count"`
-	}{TotalAppraisalCount: total})
+		DecoratedAdjustments map[string]string `json:"buyback_adjustments"`
+	}{TotalAppraisalCount: total, DecoratedAdjustments: ctx.App.DecoratedAdjustments()})
 }
 
 // HandleLegal is the handler for /legal

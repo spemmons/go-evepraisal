@@ -26,4 +26,9 @@ func init() {
 	viper.SetDefault("sso-authorize-url", "https://login.eveonline.com/oauth/authorize")
 	viper.SetDefault("sso-token-url", "https://login.eveonline.com/oauth/token")
 	viper.SetDefault("sso-verify-url", "https://login.eveonline.com/oauth/verify")
+
+	viper.SetDefault("buyback-cap-default",101.0)
+	viper.SetDefault("buyback-cap-iporg",115.0)
+
+	viper.SetDefault("adjustments", map[string]float64{})
 }

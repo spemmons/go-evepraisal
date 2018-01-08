@@ -73,6 +73,7 @@ type AppraisalItem struct {
 	Rejected   bool
 	Qualifier  string
 	Efficiency float64
+	Adjustment float64 `json:"adjustment,omitempty"`
 	Buyback    ItemsAndTotals
 	Extra      struct {
 		Fitted     bool    `json:"fitted,omitempty"`
@@ -96,27 +97,43 @@ func (i AppraisalItem) DisplayName() string {
 	}
 }
 
+func (i AppraisalItem) IsAdjusted() bool {
+	for _, item := range i.Buyback.Items {
+		if item.Adjustment != 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func (i AppraisalItem) SellTotal() float64 {
-	return float64(i.Quantity) * i.Prices.Sell.Min
+	return float64(i.Quantity) * i.EffectiveAdjustment() * i.Prices.Sell.Min
 }
 
 func (i AppraisalItem) BuyTotal() float64 {
-	return float64(i.Quantity) * i.Prices.Buy.Max
+	return float64(i.Quantity) * i.EffectiveAdjustment() * i.Prices.Buy.Max
 }
 
 func (i AppraisalItem) SellISKVolume() float64 {
-	return i.Prices.Sell.Min / i.TypeVolume
+	return i.EffectiveAdjustment() * i.Prices.Sell.Min / i.TypeVolume
 }
 
 func (i AppraisalItem) BuyISKVolume() float64 {
-	return i.Prices.Buy.Max / i.TypeVolume
+	return i.EffectiveAdjustment() * i.Prices.Buy.Max / i.TypeVolume
+}
+
+func (i AppraisalItem) EffectiveAdjustment() float64 {
+	if i.Adjustment == 0 {
+		return 1
+	}
+	return (100.0 + i.Adjustment) / 100.0
 }
 
 func (i AppraisalItem) SingleRepresentativePrice() float64 {
 	if i.Prices.Sell.Min != 0 {
-		return i.Prices.Sell.Min
+		return i.EffectiveAdjustment() * i.Prices.Sell.Min
 	} else {
-		return i.Prices.Buy.Max
+		return i.EffectiveAdjustment() * i.Prices.Buy.Max
 	}
 }
 
@@ -247,6 +264,10 @@ type PriceStats struct {
 	OrderCount int64   `json:"order_count"`
 }
 
+type Adjustments map[int64]float64
+
+var EmptyAdjustments = map[int64]float64{}
+
 func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error) {
 	var (
 		prices Prices
@@ -324,14 +345,14 @@ func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
 	appraisal.MarketName = market
 
 	appraisal.Original.Items = parserResultToAppraisalItems(result)
-	app.priceAppraisalItems(appraisal.Original.Items, &appraisal.Original.Totals, market)
+	app.priceAppraisalItems(appraisal.Original.Items, &appraisal.Original.Totals, market, EmptyAdjustments)
 
 	appraisal.Original.Items, appraisal.Buyback = app.calculateBuyback(appraisal.Original.Items)
 
 	return appraisal, nil
 }
 
-func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, market string) {
+func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, market string, adjustments map[int64]float64) {
 	for i := 0; i < len(items); i++ {
 		t, ok := app.TypeDB.GetType(items[i].Name)
 		if !ok {
@@ -357,6 +378,10 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 		}
 
 		items[i].Prices = prices
+
+		if adjustment, ok := adjustments[t.ID]; ok {
+			items[i].Adjustment = adjustment
+		}
 
 		totals.Buy += items[i].BuyTotal()
 		totals.Sell += items[i].SellTotal()

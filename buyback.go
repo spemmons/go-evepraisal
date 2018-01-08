@@ -3,6 +3,8 @@ package evepraisal
 import (
 	"sort"
 	"github.com/evepraisal/go-evepraisal/typedb"
+	"github.com/spf13/viper"
+	"strconv"
 )
 
 const AsteroidCategoryID int64 = 25
@@ -12,9 +14,6 @@ const MoonMaterialsGroupID int64 = 427
 const IceProductGroupID int64 = 423
 
 var BuybackGroups = []int64{MineralGroupID, MoonMaterialsGroupID, IceProductGroupID}
-
-const BuybackCapTEST = 105
-const BuybackCapIPOrg = 125
 
 const CorpIP int64 = 98210135
 const Corp0MD int64 = 728517421
@@ -30,6 +29,13 @@ func (appraisal *Appraisal) BuybackOffer() float64 {
 		}
 	}
 	return float64(int64(buybackOffer + 0.99));
+}
+
+func (appraisal *Appraisal) AverageBuybackPercentage() int64 {
+	if appraisal.Original.Totals.Buy > 0 {
+		return int64(appraisal.BuybackOffer() * 100 / appraisal.Original.Totals.Buy + 0.5)
+	}
+	return 0
 }
 
 func (appraisal *Appraisal) IsBuybackCapped() bool {
@@ -50,21 +56,46 @@ func (appraisal *Appraisal) BuybackReady() bool {
 	return true
 }
 
+func (app *App) DecoratedAdjustments() (adjustments map[string]string) {
+	adjustments = make(map[string]string)
+	for name, value := range viper.GetStringMapString("adjustments") {
+		t, ok := app.TypeDB.GetType(name)
+		if ok {
+			adjustments[t.Name] = value
+		}
+	}
+	return
+}
+
+func (app *App) buybackAdjustments() (adjustments Adjustments) {
+	adjustments = make(map[int64]float64)
+	for name, value := range viper.GetStringMapString("adjustments") {
+		t, ok := app.TypeDB.GetType(name)
+		adjustment, err := strconv.ParseFloat(value, 64)
+		if ok && err == nil {
+			adjustments[t.ID] = adjustment
+		}
+	}
+	return
+}
+
 func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems []AppraisalItem, buyback ItemsAndTotals) {
+	adjustments := app.buybackAdjustments()
+
 	buybackMap := make(map[string]*AppraisalItem)
 
 	modifiedItems = make([]AppraisalItem, 0, len(originalItems))
 	for _, item := range originalItems {
 		if !item.Rejected {
 			itemMap := make(map[string]*AppraisalItem)
-			item.Qualifier, item.Efficiency = app.collectBuybackItems(itemMap, "", 100, item.TypeID, item.Quantity)
+			item.Qualifier, item.Efficiency = app.collectBuybackItems(itemMap, "DIRECT", 100, item.TypeID, item.Quantity)
 			item.Buyback.Items = make([]AppraisalItem, 0, len(itemMap))
 			for _, bbitem := range itemMap {
 				item.Buyback.Items = append(item.Buyback.Items, *bbitem)
-				app.updateBuybackItems(buybackMap, "", 100, bbitem.Name, bbitem.TypeID, bbitem.Quantity)
+				app.updateBuybackItems(buybackMap, "DIRECT", 100, bbitem.Name, bbitem.TypeID, bbitem.Quantity)
 			}
 			sort.Sort(ByQuantity(item.Buyback.Items))
-			app.priceAppraisalItems(item.Buyback.Items, &item.Buyback.Totals, "jita")
+			app.priceAppraisalItems(item.Buyback.Items, &item.Buyback.Totals, "jita", adjustments)
 		}
 		modifiedItems = append(modifiedItems, item)
 	}
@@ -72,7 +103,7 @@ func (app *App) calculateBuyback(originalItems []AppraisalItem) (modifiedItems [
 	for _, bbitem := range buybackMap {
 		buyback.Items = append(buyback.Items, *bbitem)
 	}
-	app.priceAppraisalItems(buyback.Items, &buyback.Totals, "jita")
+	app.priceAppraisalItems(buyback.Items, &buyback.Totals, "jita", adjustments)
 	sort.Sort(ByQuantity(buyback.Items))
 	return
 }
