@@ -367,7 +367,7 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 			items[i].TypeVolume = t.Volume
 		}
 
-		items[i].Rejected = !app.ableToBuyback(t)
+		items[i].Rejected = false // !app.ableToBuyback(t) -- vipeer wants to accept anything...
 		if items[i].Rejected {
 			continue
 		}

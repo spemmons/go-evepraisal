@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/evepraisal/go-evepraisal"
+	"github.com/dustin/go-humanize"
+	"github.com/spf13/viper"
 )
 
 const ValidAssignee = 98497376  // NOTE: ID for 0.0 Massive Production
@@ -89,6 +91,12 @@ func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepr
 			errors = append(errors, fmt.Sprintf("%s cannot be included, please remove it before submitting a buyback contract", item.DisplayName()))
 			summary = "invalid"
 		}
+	}
+
+	buybackMaxVolume := viper.GetFloat64("buyback-max-volume")
+	if appraisal.Original.Totals.Volume > buybackMaxVolume {
+		errors = append(errors, fmt.Sprintf("Buyback volume cannot be larger than %s m3", humanize.Commaf(buybackMaxVolume)))
+		summary = "invalid"
 	}
 
 	var contract *Contract

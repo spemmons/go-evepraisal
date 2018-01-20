@@ -29,6 +29,7 @@ func init() {
 
 	viper.SetDefault("buyback-cap-default",101.0)
 	viper.SetDefault("buyback-cap-iporg",115.0)
+	viper.SetDefault("buyback-max-volume", 80000)
 
 	viper.SetDefault("adjustments", map[string]float64{})
 }
