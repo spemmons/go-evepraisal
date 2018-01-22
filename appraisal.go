@@ -327,6 +327,15 @@ func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error)
 	return prices, nil
 }
 
+func (appraisal *Appraisal) OnlyCompressedOre() bool {
+	for _, item := range appraisal.Original.Items {
+		if !strings.HasPrefix(item.Name,"Compressed") { // NOTE: this might allow more than ore through...
+			return false
+		}
+	}
+	return true
+}
+
 func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
 	appraisal := &Appraisal{
 		Created: time.Now().Unix(),

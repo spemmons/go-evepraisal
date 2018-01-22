@@ -55,13 +55,14 @@
             <p class="buyback">You deleted your contract. Please try again if you wish.</p>
         {{end}}
         <p>To submit this Buyback Offer, you will need to create a contract with these in the following way:</p>
-            <ol>
-                <li>Contract Type: <i class="buyback">Item Exchange</i></li>
-                <li>Availability: <i><span class="buyback">Private</span> to <span class="buyback">0.0 Massive Production</span>; you can use the corp ticket <span id="corpTicker" class="buyback" aria-hidden="true">0MP</span></i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('corpTicker')">&nbsp;</span></li>
-                <li>I will receive: <i class="buyback" id="contractPrice">{{commaf .Page.Appraisal.BuybackOffer}}</i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractPrice')">&nbsp;</span> also called Price</li>
-                <li>Expiration: <i class="buyback">2 Weeks</i> or longer</li>
-                <li>Description: <i class="buyback" id="contractTitle">{{ .Page.Status.Title }}</i> &nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractTitle')">&nbsp;</span></li>
-            </ol>
+        <ol>
+            <li>Contract Type: <i class="buyback">Item Exchange</i></li>
+            <li>Availability: <i><span class="buyback">Private</span> to <span class="buyback">0.0 Massive Production</span>; you can use the corp ticket <span id="corpTicker" class="buyback" aria-hidden="true">0MP</span></i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('corpTicker')">&nbsp;</span></li>
+            <li>I will receive: <i class="buyback" id="contractPrice">{{commaf .Page.Appraisal.BuybackOffer}}</i>&nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractPrice')">&nbsp;</span> also called Price</li>
+            <li>Expiration: <i class="buyback">2 Weeks</i> or longer</li>
+            <li>Description: <i class="buyback" id="contractTitle">{{ .Page.Status.Title }}</i> &nbsp;<span class="fa fa-clipboard" aria-hidden="true" onclick="copyToClipboard('contractTitle')">&nbsp;</span></li>
+        </ol>
+        <p class="text-warning">{{ .Page.Appraisal.BuybackWarning }}</p>
         <p>
             <a role="button" class="btn btn-primary" type="button" href="{{.Page.Appraisal | appraisallink}}">CHECK CONTRACT NOW</a></button>
             NOTE: CCP only updates contract data every 5 minutes. Please wait 5 minutes after creating your contract. Sorry, mate!

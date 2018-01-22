@@ -5,6 +5,8 @@ import (
 	"github.com/evepraisal/go-evepraisal/typedb"
 	"github.com/spf13/viper"
 	"strconv"
+	"fmt"
+	"github.com/dustin/go-humanize"
 )
 
 const AsteroidCategoryID int64 = 25
@@ -29,6 +31,14 @@ func (appraisal *Appraisal) BuybackOffer() float64 {
 		}
 	}
 	return float64(int64(buybackOffer + 0.99));
+}
+
+func (appraisal *Appraisal) BuybackWarning() string {
+	buybackMaxVolume := viper.GetFloat64("buyback-max-volume")
+	if appraisal.Original.Totals.Volume > buybackMaxVolume && !appraisal.OnlyCompressedOre() {
+		return fmt.Sprintf("NOTE: Since the volume is greater than %s m3 and contains more than Compressed Ore, it must be in H-T40Z to be accepted", humanize.Commaf(buybackMaxVolume))
+	}
+	return ""
 }
 
 func (appraisal *Appraisal) AverageBuybackPercentage() int64 {

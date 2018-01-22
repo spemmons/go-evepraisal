@@ -265,7 +265,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		if!found || state != status.Summary {
 			switch status.Summary {
 			case "valid":
-				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is VALID and ready for acceptance!\\nCharacter: *%s*\\nAmount: *%s*", status.Title, user.CharacterName, humanize.Commaf(appraisal.BuybackOffer())))
+				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is VALID and ready for acceptance!\\nCharacter: *%s*\\nAmount: *%s* isk\\nVolume: *%s* m3\\nLocation: *%s*", status.Title, user.CharacterName, humanize.Commaf(appraisal.BuybackOffer()), humanize.Commaf(float64(int64(appraisal.Original.Totals.Volume))), status.Contract.LocationName))
 			case "invalid":
 				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is INVALID and should be rejected!", status.Title))
 			case "deleted":

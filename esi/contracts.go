@@ -10,9 +10,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-const ValidAssignee = 98497376  // NOTE: ID for 0.0 Massive Production
-const ValidAlliance = 498125261 // NOTE: TEST
-const ValidRegion = 10000039    // NOTE: Esoteria
+const ValidAssignee = 98497376      // NOTE: ID for 0.0 Massive Production
+const ValidAlliance = 498125261     // NOTE: TEST
+const ValidRegion = 10000039        // NOTE: Esoteria
+const UnrestrictedSystem = 30003144 // NOTE: H-T40Z
 
 type Contract struct {
 	ContractID      int64   `json:"contract_id"`                 //contract_id (integer): contract_id integer ,
@@ -38,7 +39,8 @@ type Contract struct {
 	Buyout          float64 `json:"buyout,omitempty"`            //buyout (number, optional): Buyout price (for Auctions only) ,
 	Volume          float64 `json:"volume,omitempty"`            //volume (number, optional): Volume of items in the contract
 
-	LocationName	string	`json:"location_name,omitempty"`	 // NOTE - not part of API structure
+	SystemID     int64  `json:"system_id,omitempty"`     // NOTE - not part of API structure
+	LocationName string `json:"location_name,omitempty"` // NOTE - not part of API structure
 }
 
 type ContractItem struct {
@@ -91,12 +93,6 @@ func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepr
 			errors = append(errors, fmt.Sprintf("%s cannot be included, please remove it before submitting a buyback contract", item.DisplayName()))
 			summary = "invalid"
 		}
-	}
-
-	buybackMaxVolume := viper.GetFloat64("buyback-max-volume")
-	if appraisal.Original.Totals.Volume > buybackMaxVolume {
-		errors = append(errors, fmt.Sprintf("Buyback volume cannot be larger than %s m3", humanize.Commaf(buybackMaxVolume)))
-		summary = "invalid"
 	}
 
 	var contract *Contract
@@ -170,6 +166,13 @@ func (of *OauthFetcher) validateContract(user *evepraisal.User, appraisal *evepr
 		return
 	}
 
+	if contract.SystemID != UnrestrictedSystem && !appraisal.OnlyCompressedOre() {
+		buybackMaxVolume := viper.GetFloat64("buyback-max-volume")
+		if appraisal.Original.Totals.Volume > buybackMaxVolume {
+			errors = append(errors, fmt.Sprintf("Buyback volume of %s m3 is too large; it must be no larger than %s m3", humanize.Commaf(appraisal.Original.Totals.Volume), humanize.Commaf(buybackMaxVolume)))
+		}
+	}
+
 	return
 }
 
@@ -226,6 +229,7 @@ func (of *OauthFetcher) validateContractLocation(contract *Contract) (errors []s
 		return
 	}
 
+	contract.SystemID = systemID
 	contract.LocationName = name
 
 	if regionID, _ := of.FindRegionForSystemID(systemID); regionID != ValidRegion {
