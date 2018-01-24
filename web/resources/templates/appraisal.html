@@ -168,7 +168,7 @@
             </a>
             {{end}}
             <a href="/item/{{$item.TypeID}}">{{$item.DisplayName}}{{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
-            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}%{{if $item.IsAdjusted}} - ADJUSTED{{end}})</span>{{end}}
+            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.1f" }}</span>{{end}}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
@@ -282,7 +282,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">{{ $item.Quantity }} {{ $item.Name }} {{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.0f" }}% Results</h4>
+          <h4 class="modal-title">{{ $item.Quantity }} {{ $item.Name }} {{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.1f" }}% Results</h4>
         </div>
         <div class="modal-body">
           {{template "_buyback_table.html" $item.Buyback }}

@@ -69,10 +69,10 @@
 </form>
 
 {{if ne 0 (len .Page.DecoratedAdjustments)}}
-<h6>Current Adjustments To Jita Buy Value</h6>
+<h6>Current Buyback Based On Jita Buy Value (JBV)</h6>
 <ul>
 {{range $name, $adjustment := .Page.DecoratedAdjustments}}
-    <li class="buyback">{{$name}} adjusted by {{$adjustment}}%</li>
+    <li class="buyback">{{$name}} buyback of {{$adjustment}}% JBV</li>
 {{end}}
 </ul>
 {{end}}

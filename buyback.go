@@ -11,6 +11,8 @@ import (
 
 const AsteroidCategoryID int64 = 25
 
+const BaseAdjustmentID int64 = 0
+
 const MineralGroupID int64 = 18
 const MoonMaterialsGroupID int64 = 427
 const IceProductGroupID int64 = 423
@@ -68,10 +70,16 @@ func (appraisal *Appraisal) BuybackReady() bool {
 
 func (app *App) DecoratedAdjustments() (adjustments map[string]string) {
 	adjustments = make(map[string]string)
-	for name, value := range viper.GetStringMapString("adjustments") {
-		t, ok := app.TypeDB.GetType(name)
-		if ok {
-			adjustments[t.Name] = value
+
+	baseAdjustment := viper.GetFloat64("buyback-base-adjustment")
+	if baseAdjustment != 0 {
+		adjustments["Default"] = fmt.Sprintf("%2.0f", baseAdjustment)
+		for name, value := range viper.GetStringMapString("adjustments") {
+			t, ok := app.TypeDB.GetType(name)
+			adjustment, err := strconv.ParseFloat(value, 64)
+			if ok && err == nil {
+				adjustments[t.Name] = fmt.Sprintf("%2.0f", baseAdjustment + adjustment)
+			}
 		}
 	}
 	return
@@ -79,11 +87,12 @@ func (app *App) DecoratedAdjustments() (adjustments map[string]string) {
 
 func (app *App) buybackAdjustments() (adjustments Adjustments) {
 	adjustments = make(map[int64]float64)
+	adjustments[BaseAdjustmentID] = viper.GetFloat64("buyback-base-adjustment")
 	for name, value := range viper.GetStringMapString("adjustments") {
 		t, ok := app.TypeDB.GetType(name)
 		adjustment, err := strconv.ParseFloat(value, 64)
 		if ok && err == nil {
-			adjustments[t.ID] = adjustment
+			adjustments[t.ID] = adjustments[BaseAdjustmentID] + adjustment
 		}
 	}
 	return
@@ -126,9 +135,9 @@ func (app *App) collectBuybackItems(itemMap map[string]*AppraisalItem, qualifier
 		app.updateBuybackItems(itemMap, qualifier, efficiency, t.Name, t.ID, portion)
 	} else {
 		if t.CategoryID == AsteroidCategoryID || t.GroupID == IceProductGroupID {
-			qualifier, efficiency = "REFINE", 85
+			qualifier, efficiency = "REFINE", viper.GetFloat64("buyback-refine-rate")
 		} else {
-			qualifier, efficiency = "REPROCESS", 55
+			qualifier, efficiency = "REPROCESS", viper.GetFloat64("buyback-reprocess-rate")
 		}
 		for _, material := range t.Materials {
 			app.collectBuybackItems(itemMap, qualifier, efficiency, material.TypeID, portion*material.Quantity)

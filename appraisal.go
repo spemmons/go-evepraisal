@@ -97,15 +97,6 @@ func (i AppraisalItem) DisplayName() string {
 	}
 }
 
-func (i AppraisalItem) IsAdjusted() bool {
-	for _, item := range i.Buyback.Items {
-		if item.Adjustment != 0 {
-			return true
-		}
-	}
-	return false
-}
-
 func (i AppraisalItem) SellTotal() float64 {
 	return float64(i.Quantity) * i.EffectiveAdjustment() * i.Prices.Sell.Min
 }
@@ -126,7 +117,7 @@ func (i AppraisalItem) EffectiveAdjustment() float64 {
 	if i.Adjustment == 0 {
 		return 1
 	}
-	return (100.0 + i.Adjustment) / 100.0
+	return i.Adjustment / 100.0
 }
 
 func (i AppraisalItem) SingleRepresentativePrice() float64 {
@@ -388,8 +379,13 @@ func (app *App) priceAppraisalItems(items []AppraisalItem, totals *Totals, marke
 
 		items[i].Prices = prices
 
-		if adjustment, ok := adjustments[t.ID]; ok {
-			items[i].Adjustment = adjustment
+		baseAdjustment := adjustments[BaseAdjustmentID]
+		if baseAdjustment != 0 {
+			if adjustment, ok := adjustments[t.ID]; ok {
+				items[i].Adjustment = adjustment
+			} else {
+				items[i].Adjustment = baseAdjustment
+			}
 		}
 
 		totals.Buy += items[i].BuyTotal()
