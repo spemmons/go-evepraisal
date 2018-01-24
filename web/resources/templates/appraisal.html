@@ -168,7 +168,7 @@
             </a>
             {{end}}
             <a href="/item/{{$item.TypeID}}">{{$item.DisplayName}}{{if $item.Extra.BPC}} (Copy) <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}</a>
-            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.1f" }}</span>{{end}}
+            {{if (ne $item.Efficiency 0.0)}}&nbsp;<span class="buyback">({{ $item.Qualifier }} {{ $item.Efficiency | printf "%2.1f" }})</span>{{end}}
           </td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
