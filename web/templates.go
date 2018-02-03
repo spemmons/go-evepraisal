@@ -15,10 +15,12 @@ import (
 	"github.com/evepraisal/go-evepraisal"
 )
 
+var spewConfig = spew.ConfigState{Indent: "    ", SortKeys: true}
 var templateFuncs = template.FuncMap{
 	"humanizeVolume":  humanizeVolume,
-	"commaf":          humanizeCommaf,
 	"comma":           humanize.Comma,
+	"commaf":          humanizeCommaf,
+	"commai":          func(i int) string { return humanize.Comma(int64(i)) },
 	"prettybignumber": HumanLargeNumber,
 	"relativetime":    humanize.Time,
 	"timefmt":         func(t time.Time) string { return t.Format("2006-01-02 15:04:05") },
@@ -28,10 +30,14 @@ var templateFuncs = template.FuncMap{
 	"multiply": func(a, b float64) float64 { return a * b },
 
 	// Appraisal-specific
-	"appraisallink": appraisalLink,
+	"appraisallink":       appraisalLink,
+	"normalAppraisalLink": normalAppraisalLink,
+	"liveAppraisalLink":   liveAppraisalLink,
+	"rawAppraisalLink":    rawAppraisalLink,
+	"jsonAppraisalLink":   jsonAppraisalLink,
 
 	// Only for debugging
-	"spew": spew.Sdump,
+	"spew": spewConfig.Sdump,
 }
 
 type namedThing struct {
@@ -61,6 +67,7 @@ type PageRoot struct {
 		SelectedVisibility   string
 		Visibilities         []namedThing
 		SelectedPersist      bool
+		PricePercentage      float64
 		BaseURL              string
 		BaseURLWithoutScheme string
 		User                 *evepraisal.User
@@ -81,7 +88,7 @@ func (ctx *Context) renderWithRoot(r *http.Request, w http.ResponseWriter, templ
 		return fmt.Errorf("Could not find template named '%s'", templateName)
 	}
 
-	if r.Header.Get("format") == "json" {
+	if r.Header.Get("format") == formatJSON {
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(root.Page)
 	} else {
@@ -90,6 +97,7 @@ func (ctx *Context) renderWithRoot(r *http.Request, w http.ResponseWriter, templ
 		root.UI.SelectedVisibility = ctx.getSessionValueWithDefault(r, "visibility", "public")
 		root.UI.Visibilities = selectableVisibilities
 		root.UI.SelectedPersist = ctx.getSessionBooleanWithDefault(r, "persist", true)
+		root.UI.PricePercentage = ctx.getSessionFloat64WithDefault(r, "price_percentage", 100)
 		root.UI.BaseURLWithoutScheme = strings.TrimPrefix(strings.TrimPrefix(ctx.BaseURL, "https://"), "http://")
 		root.UI.BaseURL = ctx.BaseURL
 		root.UI.FlashMessages = ctx.getFlashMessages(r, w)

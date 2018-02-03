@@ -7,15 +7,18 @@ import (
 	"github.com/evepraisal/go-evepraisal/typedb"
 )
 
+// ContextListingParser is a parser which uses the typeDB to help parse a listing
 type ContextListingParser struct {
 	typeDB typedb.TypeDB
 }
 
+// NewContextListingParser returns a new listing (w/context) parser
 func NewContextListingParser(typeDB typedb.TypeDB) Parser {
 	p := &ContextListingParser{typeDB: typeDB}
 	return p.Parse
 }
 
+// Parse parses a listing
 func (p *ContextListingParser) Parse(input Input) (ParserResult, Input) {
 	listing := &Listing{}
 
@@ -27,8 +30,8 @@ func (p *ContextListingParser) Parse(input Input) (ParserResult, Input) {
 		name1 := CleanTypeName(match[1])
 		name2 := CleanTypeName(match[2])
 		if p.typeDB.HasType(name1) && p.typeDB.HasType(name2) {
-			matchgroup[ListingItem{Name: name1}] += 1
-			matchgroup[ListingItem{Name: name2}] += 1
+			matchgroup[ListingItem{Name: name1}]++
+			matchgroup[ListingItem{Name: name2}]++
 			listing.lines = append(listing.lines, i)
 		} else {
 			rest[i] = input[i]
@@ -62,7 +65,18 @@ func (p *ContextListingParser) Parse(input Input) (ParserResult, Input) {
 	for i, match := range matches3 {
 		name := CleanTypeName(match[1])
 		if p.typeDB.HasType(name) {
-			matchgroup[ListingItem{Name: name}] += 1
+			matchgroup[ListingItem{Name: name}]++
+			listing.lines = append(listing.lines, i)
+		} else {
+			rest[i] = input[i]
+		}
+	}
+
+	matches4, rest := regexParseLines(reListing4, rest)
+	for i, match := range matches4 {
+		name := CleanTypeName(match[2])
+		if p.typeDB.HasType(name) {
+			matchgroup[ListingItem{Name: name}] += ToInt(match[1])
 			listing.lines = append(listing.lines, i)
 		} else {
 			rest[i] = input[i]

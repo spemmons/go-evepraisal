@@ -56,7 +56,13 @@
   <div class="col-lg-8">
     {{ if .Page.Appraisal.Unparsed }}
     <div class="alert alert-warning" role="alert">
-      <strong>Bad lines!</strong> <strong>{{ .Page.Appraisal.Unparsed | len }}</strong> of the lines could not be parsed.
+      <strong>Bad lines! {{ .Page.Appraisal.Unparsed | len }}</strong> of the lines could not be parsed.
+    </div>
+    {{end}}
+
+    {{if .Page.Appraisal.UsingPercentage}}
+    <div class="alert alert-warning" role="alert">
+      <strong>Percentage Prices:</strong> The prices shown below are <strong>{{.Page.Appraisal.PricePercentage}}%</strong> of the prices that you'd expect to see in the {{.Page.Appraisal.MarketName}} market.
     </div>
     {{end}}
 
@@ -69,8 +75,13 @@
     {{if ne .Page.Appraisal.ID ""}}
     <div class="pull-right appraisal-options">
       <a role="button" class="btn btn-primary btn-xs" type="button" href="#permalink-modal" data-toggle="modal" data-target="#permalink-modal"><span class="glyphicon glyphicon-bookmark"></span>  Permalink</a></button>
-      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | appraisallink}}.raw" target="_blank"><span class="glyphicon glyphicon-align-justify"></span> Raw</a></button>
-      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | appraisallink}}.json" target="_blank"><span class="glyphicon glyphicon-chevron-right"></span> JSON</a></button>
+      {{if not .Page.Appraisal.Live}}
+        <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | liveAppraisalLink}}"><span class="glyphicon glyphicon-record"></span> Live Prices</a></button>
+      {{else}}
+        <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | normalAppraisalLink}}"><span class="glyphicon glyphicon-time"></span> Frozen Prices</a></button>
+      {{end}}
+      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | rawAppraisalLink}}" target="_blank"><span class="glyphicon glyphicon-align-justify"></span> Raw</a></button>
+      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | jsonAppraisalLink}}" target="_blank"><span class="glyphicon glyphicon-chevron-right"></span> JSON</a></button>
 
       {{if .Page.IsOwner}}
       <a role="button" class="btn btn-danger btn-xs" type="button" href="#delete-appraisal-modal" data-toggle="modal" data-target="#delete-appraisal-modal"><span class="glyphicon glyphicon-trash"></span> Delete</a></button>
@@ -79,10 +90,18 @@
     {{end}}
 
     <div>
-      <div>
-        <p class="text-left"><strong>{{.Page.Appraisal.Kind}}</strong> priced in <strong>{{.Page.Appraisal.MarketName}}</strong> {{relativetime .Page.Appraisal.CreatedTime}}{{if (and (ne .Page.Appraisal.ID "") .Page.Appraisal.Private)}} (private){{end}}</p>
-      </div>
-
+      <span class="nowrap">
+        <strong>
+          {{if (and (ne .Page.Appraisal.ID "") .Page.Appraisal.Private)}}<span class="text-primary">private</span>{{end}} 
+          {{.Page.Appraisal.Kind}}
+        </strong>
+        priced {{if .Page.Appraisal.UsingPercentage}}
+         at <strong><span class="text-warning">{{.Page.Appraisal.PricePercentage}}%</span></strong> of
+        {{else}}
+         in <strong>{{.Page.Appraisal.MarketName}}</strong>
+        {{end}}
+        {{relativetime .Page.Appraisal.CreatedTime}}
+      </span>
       <div>
         <h4>
           <span class="nowrap">{{ prettybignumber .Page.Appraisal.Totals.Sell }} <small>estimated sell value</small></span>

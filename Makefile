@@ -21,7 +21,8 @@ setup:
 	go get -u github.com/jteeuwen/go-bindata/...
 	go get -u github.com/cespare/reflex
 	go get -u github.com/jstemmer/go-junit-report
-	go install vendor/...
+	go get -u github.com/alecthomas/gometalinter
+	${GOPATH}/bin/gometalinter --install
 	${GOPATH}/bin/dep ensure
 
 build: generate
@@ -45,6 +46,28 @@ test:
 
 test-reload:
 	${GOPATH}/bin/reflex -c reflex.test.conf
+
+lint:
+	${GOPATH}/bin/gometalinter \
+		--vendored-linters \
+		--vendor \
+		--disable-all \
+		--line-length=180 \
+		--cyclo-over=50 \
+		--exclude="^web/bindata\.go:" \
+		--enable=gocyclo \
+		--enable=gas \
+		--enable=goconst \
+		--enable=gofmt \
+		--enable=goimports \
+		--enable=golint \
+		--enable=gotype \
+		--enable=ineffassign \
+		--enable=lll \
+		--enable=misspell \
+		--enable=vet \
+		--enable=vetshadow \
+		./...
 
 run: install
 	${GOPATH}/bin/evepraisal

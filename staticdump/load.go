@@ -2,15 +2,12 @@ package staticdump
 
 import (
 	"archive/zip"
-	"compress/bzip2"
-	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/evepraisal/go-evepraisal/typedb"
@@ -19,6 +16,7 @@ import (
 
 var userAgent = "go-evepraisal"
 
+// FindLastStaticDumpURL returns the URL of the last eve static data dump
 func FindLastStaticDumpURL(client *pester.Client) (string, error) {
 	i := 0
 	current := time.Now()
@@ -46,50 +44,6 @@ func FindLastStaticDumpURL(client *pester.Client) (string, error) {
 		}
 	}
 	return "", errors.New("Could not find latest static dump URL")
-}
-
-func downloadTypeVolumes(client *pester.Client) (map[int64]float64, error) {
-	req, err := http.NewRequest("GET", "https://www.fuzzwork.co.uk/dump/latest/invVolumes.csv.bz2", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("User-Agent", userAgent)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	reader := csv.NewReader(bzip2.NewReader(resp.Body))
-
-	// Ignore header
-	reader.Read()
-
-	typeVolumes := make(map[int64]float64)
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		id, err := strconv.ParseInt(record[0], 10, 64)
-		if err != nil {
-			continue
-		}
-
-		v, err := strconv.ParseFloat(record[1], 64)
-		if err != nil {
-			continue
-		}
-
-		typeVolumes[id] = v
-
-	}
-	return typeVolumes, nil
 }
 
 func downloadTypes(client *pester.Client, staticDumpURL string, staticDataPath string) error {
@@ -120,6 +74,7 @@ func downloadTypes(client *pester.Client, staticDumpURL string, staticDataPath s
 	return nil
 }
 
+// Type is an eve online type
 type Type struct {
 	GroupID       int64 `yaml:"groupID"`
 	MarketGroupID int64 `yaml:"marketGroupID"`
@@ -131,6 +86,7 @@ type Type struct {
 	BasePrice float64
 }
 
+// Blueprint is an eve online blueprint
 type Blueprint struct {
 	BlueprintTypeID int64 `yaml:"blueprintTypeID"`
 	Activities      struct {

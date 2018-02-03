@@ -9,20 +9,27 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/evepraisal/go-evepraisal"
 	"github.com/evepraisal/go-evepraisal/legacy"
+	"github.com/evepraisal/go-evepraisal/parsers"
 	"github.com/go-zoo/bone"
 )
 
 var (
 	errInputTooBig = errors.New("Input value is too big")
 	errInputEmpty  = errors.New("Input value is empty")
+
+	formatJSON  = "json"
+	formatRaw   = "raw"
+	formatDebug = "debug"
 )
 
 // AppraisalPage contains data used on the appraisal page
@@ -32,11 +39,70 @@ type AppraisalPage struct {
 	IsOwner   bool                  `json:"is_owner,omitempty"`
 }
 
-func appraisalLink(appraisal *evepraisal.Appraisal) string {
+// AppraisalDebugPage is the data needed to render the
+type AppraisalDebugPage struct {
+	Appraisal    *evepraisal.Appraisal `json:"appraisal"`
+	Lines        []AppraisalDebugLine  `json:"lines"`
+	ParserResult parsers.ParserResult  `json:"parser_result"`
+}
+
+// AppraisalDebugLine represents a single line of an appraisal along with how it was parsed
+type AppraisalDebugLine struct {
+	Number int    `json:"number"`
+	Parsed bool   `json:"parsed"`
+	Parser string `json:"parser"`
+	Text   string `json:"text"`
+}
+
+func makeAppraisalURL(appraisal *evepraisal.Appraisal) *url.URL {
+	u := &url.URL{}
 	if appraisal.Private {
-		return fmt.Sprintf("/a/%s/%s", appraisal.ID, appraisal.PrivateToken)
+		u.Path = fmt.Sprintf("/a/%s/%s", appraisal.ID, appraisal.PrivateToken)
+	} else {
+		u.Path = fmt.Sprintf("/a/%s", appraisal.ID)
 	}
-	return fmt.Sprintf("/a/%s", appraisal.ID)
+	return u
+}
+
+func maybeAddLiveParam(appraisal *evepraisal.Appraisal, u *url.URL) {
+	q := u.Query()
+	if appraisal.Live {
+		q.Set("live", "yes")
+	}
+	u.RawQuery = q.Encode()
+}
+
+func appraisalLink(appraisal *evepraisal.Appraisal) string {
+	u := makeAppraisalURL(appraisal)
+	maybeAddLiveParam(appraisal, u)
+	return u.String()
+}
+
+func liveAppraisalLink(appraisal *evepraisal.Appraisal) string {
+	u := makeAppraisalURL(appraisal)
+	q := u.Query()
+	q.Set("live", "yes")
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func normalAppraisalLink(appraisal *evepraisal.Appraisal) string {
+	u := makeAppraisalURL(appraisal)
+	return u.String()
+}
+
+func rawAppraisalLink(appraisal *evepraisal.Appraisal) string {
+	u := makeAppraisalURL(appraisal)
+	u.Path = u.Path + ".raw"
+	maybeAddLiveParam(appraisal, u)
+	return u.String()
+}
+
+func jsonAppraisalLink(appraisal *evepraisal.Appraisal) string {
+	u := makeAppraisalURL(appraisal)
+	u.Path = u.Path + ".json"
+	maybeAddLiveParam(appraisal, u)
+	return u.String()
 }
 
 func parseAppraisalBody(r *http.Request) (string, error) {
@@ -71,6 +137,14 @@ func parseAppraisalBody(r *http.Request) (string, error) {
 func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	persist := r.FormValue("persist") != "no"
+	pricePercentageStr := "100"
+	if r.FormValue("price_percentage") != "" {
+		pricePercentageStr = r.FormValue("price_percentage")
+	}
+	pricePercentage, err := strconv.ParseFloat(pricePercentageStr, 64)
+	if err != nil || pricePercentage <= 0 || pricePercentage > 1000 {
+		ctx.renderErrorPage(r, w, http.StatusBadRequest, "Invalid price_percentage value", err.Error())
+	}
 
 	body, err := parseAppraisalBody(r)
 	if err != nil {
@@ -123,7 +197,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Actually do the appraisal
-	appraisal, err := ctx.App.StringToAppraisal(market, body)
+	appraisal, err := ctx.App.StringToAppraisal(market, body, pricePercentage)
 	if err == evepraisal.ErrNoValidLinesFound {
 		log.Println("No valid lines found:", spew.Sdump(body))
 		ctx.renderErrorPageWithRoot(r, w, http.StatusBadRequest, "Invalid input", err.Error(), errorRoot)
@@ -135,7 +209,9 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	appraisal.User = ctx.GetCurrentUser(r)
 	appraisal.Private = private
-	appraisal.PrivateToken = NewPrivateAppraisalToken()
+	if private {
+		appraisal.PrivateToken = NewPrivateAppraisalToken()
+	}
 
 	// Persist Appraisal to the database
 	if persist {
@@ -147,12 +223,13 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Log for later analyics
-	log.Println(appraisal)
+	log.Println(appraisal.Summary())
 
 	// Set new session variable
 	ctx.setSessionValue(r, w, "market", market)
 	ctx.setSessionValue(r, w, "visibility", visibility)
 	ctx.setSessionValue(r, w, "persist", persist)
+	ctx.setSessionValue(r, w, "price_percentage", pricePercentage)
 
 	sort.Slice(appraisal.Items, func(i, j int) bool {
 		return appraisal.Items[i].RepresentativePrice() > appraisal.Items[j].RepresentativePrice()
@@ -185,7 +262,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 	}
 
 	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID)
-	if err == evepraisal.AppraisalNotFound {
+	if err == evepraisal.ErrAppraisalNotFound {
 		ctx.renderErrorPage(r, w, http.StatusNotFound, "Not Found", "I couldn't find what you're looking for")
 		return
 	} else if err != nil {
@@ -207,20 +284,31 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	appraisal.Live = r.FormValue("live") == "yes"
+	if appraisal.Live {
+		ctx.App.PopulateItems(appraisal)
+		appraisal.Created = time.Now().Unix()
+	}
+
 	appraisal = cleanAppraisal(appraisal)
 
 	sort.Slice(appraisal.Items, func(i, j int) bool {
 		return appraisal.Items[i].RepresentativePrice() > appraisal.Items[j].RepresentativePrice()
 	})
 
-	if r.Header.Get("format") == "json" {
+	if r.Header.Get("format") == formatJSON {
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(appraisal)
 		return
 	}
 
-	if r.Header.Get("format") == "raw" {
+	if r.Header.Get("format") == formatRaw {
 		io.WriteString(w, appraisal.Raw)
+		return
+	}
+
+	if r.Header.Get("format") == formatDebug {
+		ctx.renderAppraisalDebug(w, r, appraisal)
 		return
 	}
 
@@ -232,11 +320,47 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		})
 }
 
+func (ctx *Context) renderAppraisalDebug(w http.ResponseWriter, r *http.Request, appraisal *evepraisal.Appraisal) {
+
+	lines := strings.Split(appraisal.Raw, "\n")
+	debugLines := make([]AppraisalDebugLine, len(lines))
+
+	lineParsers := make(map[int]string)
+	for parser, lines := range appraisal.ParserLines {
+		for _, line := range lines {
+			lineParsers[line] = parser
+		}
+	}
+
+	for i, line := range lines {
+		_, unparsed := appraisal.Unparsed[i]
+		parser, ok := lineParsers[i]
+		if !ok {
+			parser = "unknown"
+		}
+
+		debugLines[i] = AppraisalDebugLine{
+			Number: i,
+			Parsed: !unparsed,
+			Parser: parser,
+			Text:   line,
+		}
+	}
+
+	result, _ := ctx.App.Parser(parsers.StringToInput(appraisal.Raw))
+	ctx.render(r, w, "appraisal_debug.html",
+		AppraisalDebugPage{
+			Appraisal:    appraisal,
+			Lines:        debugLines,
+			ParserResult: result,
+		})
+}
+
 // HandleDeleteAppraisal is the handler for POST /a/delete/[id]
 func (ctx *Context) HandleDeleteAppraisal(w http.ResponseWriter, r *http.Request) {
 	appraisalID := bone.GetValue(r, "appraisalID")
 	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID)
-	if err == evepraisal.AppraisalNotFound {
+	if err == evepraisal.ErrAppraisalNotFound {
 		ctx.renderErrorPage(r, w, http.StatusNotFound, "Not Found", "I couldn't find what you're looking for")
 		return
 	} else if err != nil {
@@ -250,7 +374,7 @@ func (ctx *Context) HandleDeleteAppraisal(w http.ResponseWriter, r *http.Request
 	}
 
 	err = ctx.App.AppraisalDB.DeleteAppraisal(appraisalID)
-	if err == evepraisal.AppraisalNotFound {
+	if err == evepraisal.ErrAppraisalNotFound {
 		ctx.renderErrorPage(r, w, http.StatusNotFound, "Not Found", "I couldn't find what you're looking for")
 		return
 	} else if err != nil {

@@ -12,34 +12,51 @@ import (
 )
 
 var (
+	// ErrNoValidLinesFound is returned when the appraisal text finds no items
 	ErrNoValidLinesFound = fmt.Errorf("No valid lines found")
 )
 
+// Totals represents sums of all prices/volumes for all items in the appraisal
 type Totals struct {
 	Buy    float64 `json:"buy"`
 	Sell   float64 `json:"sell"`
 	Volume float64 `json:"volume"`
 }
 
+// Appraisal represents an appraisal (duh?). This is what is persisted and returned to users. See cleanAppraisal
+// to see what is never returned to the user
 type Appraisal struct {
-	ID           string          `json:"id,omitempty"`
-	Created      int64           `json:"created"`
-	Kind         string          `json:"kind"`
-	MarketName   string          `json:"market_name"`
-	Totals       Totals          `json:"totals"`
-	Items        []AppraisalItem `json:"items"`
-	Raw          string          `json:"raw"`
-	Unparsed     map[int]string  `json:"unparsed"`
-	User         *User           `json:"user,omitempty"`
-	Private      bool            `json:"private"`
-	PrivateToken string          `json:"private_token,omitempty"`
+	ID              string           `json:"id,omitempty"`
+	Created         int64            `json:"created"`
+	Kind            string           `json:"kind"`
+	MarketName      string           `json:"market_name"`
+	Totals          Totals           `json:"totals"`
+	Items           []AppraisalItem  `json:"items"`
+	Raw             string           `json:"raw"`
+	ParserLines     map[string][]int `json:"parser_lines,omitempty"`
+	Unparsed        map[int]string   `json:"unparsed"`
+	User            *User            `json:"user,omitempty"`
+	Private         bool             `json:"private"`
+	PrivateToken    string           `json:"private_token,omitempty"`
+	PricePercentage float64          `json:"price_percentage,omitempty"`
+	Live            bool             `json:"live"`
 }
 
+// UsingPercentage returns if a custom percentage is specified for the appraisal
+func (appraisal *Appraisal) UsingPercentage() bool {
+	if appraisal.PricePercentage == 0 || appraisal.PricePercentage == 100.0 {
+		return false
+	}
+	return true
+}
+
+// CreatedTime is the time that the appraisal was created (needed because the time is actually stored as a int64/unix timestamp)
 func (appraisal *Appraisal) CreatedTime() time.Time {
 	return time.Unix(appraisal.Created, 0)
 }
 
-func (appraisal *Appraisal) String() string {
+// Summary returns a string summary that is logged
+func (appraisal *Appraisal) Summary() string {
 	appraisalID := appraisal.ID
 	if appraisalID == "" {
 		appraisalID = "-"
@@ -56,6 +73,7 @@ func (appraisal *Appraisal) String() string {
 	return s
 }
 
+// AppraisalItem represents a single type of item and details the name, quantity, prices, etc. for the appraisal.
 type AppraisalItem struct {
 	Name       string  `json:"name"`
 	TypeID     int64   `json:"typeID"`
@@ -72,39 +90,45 @@ type AppraisalItem struct {
 		Routed     bool    `json:"routed,omitempty"`
 		Volume     float64 `json:"volume,omitempty"`
 		Distance   string  `json:"distance,omitempty"`
-		BPC        bool    `json:"bpc"`
+		BPC        bool    `json:"bpc,omitempty"`
 		BPCRuns    int64   `json:"bpcRuns,omitempty"`
 	} `json:"meta,omitempty"`
 }
 
+// SellTotal is used to give a representative sell total for an item
 func (i AppraisalItem) SellTotal() float64 {
 	return float64(i.Quantity) * i.Prices.Sell.Min
 }
 
+// BuyTotal is used to give a representative buy total for an item
 func (i AppraisalItem) BuyTotal() float64 {
 	return float64(i.Quantity) * i.Prices.Buy.Max
 }
 
+// SellISKVolume is used to give ISK per volume using the representative sell price
 func (i AppraisalItem) SellISKVolume() float64 {
 	return i.Prices.Sell.Min / i.TypeVolume
 }
 
+// BuyISKVolume is used to give ISK per volume using the representative buy price
 func (i AppraisalItem) BuyISKVolume() float64 {
 	return i.Prices.Buy.Max / i.TypeVolume
 }
 
+// SingleRepresentativePrice is used to give a representative price for a single item
 func (i AppraisalItem) SingleRepresentativePrice() float64 {
 	if i.Prices.Sell.Min != 0 {
 		return i.Prices.Sell.Min
-	} else {
-		return i.Prices.Buy.Max
 	}
+	return i.Prices.Buy.Max
 }
 
+// RepresentativePrice is used to give a representative price for an item. This is used for sorting.
 func (i AppraisalItem) RepresentativePrice() float64 {
 	return float64(i.Quantity) * i.SingleRepresentativePrice()
 }
 
+// Prices represents prices for an item
 type Prices struct {
 	All      PriceStats `json:"all"`
 	Buy      PriceStats `json:"buy"`
@@ -113,10 +137,12 @@ type Prices struct {
 	Strategy string     `json:"strategy"`
 }
 
+// String returns a nice string version of the prices
 func (prices Prices) String() string {
 	return fmt.Sprintf("Sell = %fISK, Buy = %fISK (Updated %s) (Using %s)", prices.Sell.Min, prices.Buy.Max, prices.Updated, prices.Strategy)
 }
 
+// Set returns a new Prices object with the given price set in all applicable stats
 func (prices Prices) Set(price float64) Prices {
 	prices.All.Average = price
 	prices.All.Max = price
@@ -139,6 +165,7 @@ func (prices Prices) Set(price float64) Prices {
 	return prices
 }
 
+// Add adds the given Prices to the current Prices and returns a new Prices
 func (prices Prices) Add(p Prices) Prices {
 	prices.All.Average += p.All.Average
 	prices.All.Max += p.All.Max
@@ -166,6 +193,7 @@ func (prices Prices) Add(p Prices) Prices {
 	return prices
 }
 
+// Sub subtracts the given Prices to the current Prices and returns a new Prices
 func (prices Prices) Sub(p Prices) Prices {
 	prices.All.Average -= p.All.Average
 	prices.All.Max -= p.All.Max
@@ -193,30 +221,32 @@ func (prices Prices) Sub(p Prices) Prices {
 	return prices
 }
 
-func (prices Prices) Mul(quantity float64) Prices {
-	prices.All.Average *= quantity
-	prices.All.Max *= quantity
-	prices.All.Min *= quantity
-	prices.All.Median *= quantity
-	prices.All.Percentile *= quantity
-	prices.All.Stddev *= quantity
+// Mul multiplies the Prices with the given factor
+func (prices Prices) Mul(multiplier float64) Prices {
+	prices.All.Average *= multiplier
+	prices.All.Max *= multiplier
+	prices.All.Min *= multiplier
+	prices.All.Median *= multiplier
+	prices.All.Percentile *= multiplier
+	prices.All.Stddev *= multiplier
 
-	prices.Buy.Average *= quantity
-	prices.Buy.Max *= quantity
-	prices.Buy.Min *= quantity
-	prices.Buy.Median *= quantity
-	prices.Buy.Percentile *= quantity
-	prices.Buy.Stddev *= quantity
+	prices.Buy.Average *= multiplier
+	prices.Buy.Max *= multiplier
+	prices.Buy.Min *= multiplier
+	prices.Buy.Median *= multiplier
+	prices.Buy.Percentile *= multiplier
+	prices.Buy.Stddev *= multiplier
 
-	prices.Sell.Average *= quantity
-	prices.Sell.Max *= quantity
-	prices.Sell.Min *= quantity
-	prices.Sell.Median *= quantity
-	prices.Sell.Percentile *= quantity
-	prices.Sell.Stddev *= quantity
+	prices.Sell.Average *= multiplier
+	prices.Sell.Max *= multiplier
+	prices.Sell.Min *= multiplier
+	prices.Sell.Median *= multiplier
+	prices.Sell.Percentile *= multiplier
+	prices.Sell.Stddev *= multiplier
 	return prices
 }
 
+// PriceStats has results of statistical functions used to combine a bunch of orders into easier to process numbers
 type PriceStats struct {
 	Average    float64 `json:"avg"`
 	Max        float64 `json:"max"`
@@ -228,6 +258,7 @@ type PriceStats struct {
 	OrderCount int64   `json:"order_count"`
 }
 
+// PricesForItem will look up market prices for the given item in the given market
 func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error) {
 	var (
 		prices Prices
@@ -287,10 +318,47 @@ func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error)
 	return prices, nil
 }
 
-func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
+// PopulateItems will populate appraisal items with type and price information
+func (app *App) PopulateItems(appraisal *Appraisal) {
+	appraisal.Totals.Buy = 0
+	appraisal.Totals.Sell = 0
+	appraisal.Totals.Volume = 0
+
+	for i := 0; i < len(appraisal.Items); i++ {
+		t, ok := app.TypeDB.GetType(appraisal.Items[i].Name)
+		if !ok {
+			log.Printf("WARN: parsed out name that isn't a type: %q", appraisal.Items[i].Name)
+			continue
+		}
+		appraisal.Items[i].TypeID = t.ID
+		appraisal.Items[i].TypeName = t.Name
+		if t.PackagedVolume != 0.0 {
+			appraisal.Items[i].TypeVolume = t.PackagedVolume
+		} else {
+			appraisal.Items[i].TypeVolume = t.Volume
+		}
+
+		prices, err := app.PricesForItem(appraisal.MarketName, appraisal.Items[i])
+		if err != nil {
+			continue
+		}
+		if appraisal.PricePercentage > 0 {
+			prices = prices.Mul(appraisal.PricePercentage / 100)
+		}
+		appraisal.Items[i].Prices = prices
+		appraisal.Totals.Buy += prices.Buy.Max * float64(appraisal.Items[i].Quantity)
+		appraisal.Totals.Sell += prices.Sell.Min * float64(appraisal.Items[i].Quantity)
+		appraisal.Totals.Volume += appraisal.Items[i].TypeVolume * float64(appraisal.Items[i].Quantity)
+	}
+}
+
+// StringToAppraisal is the big function that everything is based on. It returns a full appraisal at the given
+// market with a string of the appraisal contents (and pricePercentage).
+func (app *App) StringToAppraisal(market string, s string, pricePercentage float64) (*Appraisal, error) {
 	appraisal := &Appraisal{
-		Created: time.Now().Unix(),
-		Raw:     s,
+		Created:         time.Now().Unix(),
+		Raw:             s,
+		PricePercentage: pricePercentage,
 	}
 
 	result, unparsed := app.Parser(parsers.StringToInput(s))
@@ -303,33 +371,9 @@ func (app *App) StringToAppraisal(market string, s string) (*Appraisal, error) {
 	}
 	appraisal.Kind = kind
 	appraisal.MarketName = market
-
-	items := parserResultToAppraisalItems(result)
-	for i := 0; i < len(items); i++ {
-		t, ok := app.TypeDB.GetType(items[i].Name)
-		if !ok {
-			log.Printf("WARN: parsed out name that isn't a type: %q", items[i].Name)
-			continue
-		}
-		items[i].TypeID = t.ID
-		items[i].TypeName = t.Name
-		if t.PackagedVolume != 0.0 {
-			items[i].TypeVolume = t.PackagedVolume
-		} else {
-			items[i].TypeVolume = t.Volume
-		}
-
-		prices, err := app.PricesForItem(market, items[i])
-		if err != nil {
-			continue
-		}
-		items[i].Prices = prices
-		appraisal.Totals.Buy += prices.Buy.Max * float64(items[i].Quantity)
-		appraisal.Totals.Sell += prices.Sell.Min * float64(items[i].Quantity)
-		appraisal.Totals.Volume += items[i].TypeVolume * float64(items[i].Quantity)
-	}
-
-	appraisal.Items = items
+	appraisal.ParserLines = parserResultToParserLines(result)
+	appraisal.Items = parserResultToAppraisalItems(result)
+	app.PopulateItems(appraisal)
 
 	return appraisal, nil
 }
@@ -352,6 +396,19 @@ func findKind(result parsers.ParserResult) (string, error) {
 		}
 	}
 	return largestLinesParser, nil
+}
+
+func parserResultToParserLines(result parsers.ParserResult) map[string][]int {
+	parserLines := make(map[string][]int)
+	switch r := result.(type) {
+	case *parsers.MultiParserResult:
+		for _, subResult := range r.Results {
+			parserLines[subResult.Name()] = subResult.Lines()
+		}
+	default:
+		parserLines[result.Name()] = result.Lines()
+	}
+	return parserLines
 }
 
 func parserResultToAppraisalItems(result parsers.ParserResult) []AppraisalItem {
@@ -474,6 +531,10 @@ func parserResultToAppraisalItems(result parsers.ParserResult) []AppraisalItem {
 					Name:     item.Name,
 					Quantity: item.Quantity,
 				})
+		}
+	case *parsers.MiningLedger:
+		for _, item := range r.Items {
+			items = append(items, AppraisalItem{Name: item.Name, Quantity: item.Quantity})
 		}
 	case *parsers.HeuristicResult:
 		for _, item := range r.Items {
