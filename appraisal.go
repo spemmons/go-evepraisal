@@ -40,6 +40,7 @@ type Appraisal struct {
 	User         *User           `json:"user,omitempty"`
 	Private      bool            `json:"private"`
 	PrivateToken string          `json:"private_token,omitempty"`
+	UserName     string			 `json:"user_name,omitempty"`
 }
 
 func (appraisal *Appraisal) CreatedTime() time.Time {

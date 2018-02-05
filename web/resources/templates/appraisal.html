@@ -140,6 +140,7 @@
                 <small class="buyback">
                     Buyback Offer for Reprocessed/Refined Minerals
                     {{if .Page.Appraisal.IsBuybackCapped }}(Capped at {{ .Page.Appraisal.BuybackCap }}% of Jita Buy price){{end}}
+                    {{if and (not .Page.IsOwner) (ne .Page.Appraisal.UserName "")}}for {{ .Page.Appraisal.UserName }}{{end}}
                 </small>
             </span>
         </h4>

@@ -164,6 +164,9 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 	appraisal.User = user
 	appraisal.Private = private
 	appraisal.PrivateToken = NewPrivateAppraisalToken()
+	if user != nil {
+		appraisal.UserName = user.CharacterName
+	}
 
 	// Persist Appraisal to the database
 	if persist {
