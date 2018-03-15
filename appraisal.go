@@ -22,25 +22,25 @@ type Totals struct {
 }
 
 type ItemsAndTotals struct {
-	Totals     Totals          `json:"totals"`
-	Items      []AppraisalItem `json:"items"`
+	Totals Totals          `json:"totals"`
+	Items  []AppraisalItem `json:"items"`
 }
 
 type Appraisal struct {
-	ID           string          `json:"id,omitempty"`
-	Created      int64           `json:"created"`
-	Kind         string          `json:"kind"`
-	MarketName   string          `json:"market_name"`
-	Original     ItemsAndTotals  `json:"original"`
-	Buyback      ItemsAndTotals  `json:"buyback"`
-	BuybackCap	 float64		 `json:"buyback_cap,omitempty"`
-	Raw          string          `json:"raw"`
-	Unparsed     map[int]string  `json:"unparsed"`
-	OwnerID	     int64 			 `json:"owner_id,omitempty"`
-	User         *User           `json:"user,omitempty"`
-	Private      bool            `json:"private"`
-	PrivateToken string          `json:"private_token,omitempty"`
-	UserName     string			 `json:"user_name,omitempty"`
+	ID           string         `json:"id,omitempty"`
+	Created      int64          `json:"created"`
+	Kind         string         `json:"kind"`
+	MarketName   string         `json:"market_name"`
+	Original     ItemsAndTotals `json:"original"`
+	Buyback      ItemsAndTotals `json:"buyback"`
+	BuybackCap   float64        `json:"buyback_cap,omitempty"`
+	Raw          string         `json:"raw"`
+	Unparsed     map[int]string `json:"unparsed"`
+	OwnerID      int64          `json:"owner_id,omitempty"`
+	User         *User          `json:"user,omitempty"`
+	Private      bool           `json:"private"`
+	PrivateToken string         `json:"private_token,omitempty"`
+	UserName     string         `json:"user_name,omitempty"`
 }
 
 func (appraisal *Appraisal) CreatedTime() time.Time {
@@ -76,7 +76,7 @@ type AppraisalItem struct {
 	Efficiency float64
 	Adjustment float64 `json:"adjustment,omitempty"`
 	Buyback    ItemsAndTotals
-	Extra      struct {
+	Extra struct {
 		Fitted     bool    `json:"fitted,omitempty"`
 		Dropped    bool    `json:"dropped,omitempty"`
 		Destroyed  bool    `json:"destroyed,omitempty"`
@@ -139,6 +139,7 @@ type Prices struct {
 	Sell     PriceStats `json:"sell"`
 	Updated  time.Time  `json:"updated"`
 	Strategy string     `json:"strategy"`
+	Basis    string     `json:"basis,omitempty"`
 }
 
 func (prices Prices) String() string {
@@ -261,17 +262,12 @@ type Adjustments map[int64]float64
 var EmptyAdjustments = map[int64]float64{}
 
 func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error) {
-	var (
-		prices Prices
-		err    error
-	)
-
 	if item.Extra.BPC {
 		tName := strings.TrimSuffix(item.TypeName, " Blueprint")
 		bpType, ok := app.TypeDB.GetType(tName)
 		if !ok {
 			log.Printf("WARN: parsed out name that isn't a type: %q", tName)
-			return prices, err
+			return Prices{}, nil
 		}
 
 		marketMarket := market
@@ -315,13 +311,83 @@ func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error)
 		// return prices, nil
 	}
 
+	return app.GetAdjustedPriceForItem(market, item), nil
+}
+
+type OreYields struct {
+	Name   string
+	Yields map[string]int64
+}
+
+var AllOreYields = []OreYields{
+	{"Arkonor", map[string]int64{"Crimson": 5, "Prime": 10, "Flawless": 15}},
+	{"Bistot", map[string]int64{"Triclinic": 5, "Monoclinic": 10, "Cubic": 15}},
+	{"Crokite", map[string]int64{"Sharp": 5, "Crystalline": 10, "Pellucid": 15}},
+	{"Dark", map[string]int64{"Onyx": 5, "Obsidian": 10, "Jet": 15}},
+	{"Gneiss", map[string]int64{"Iridescent": 5, "Prismatic": 10, "Brilliant": 15}},
+	{"Hedbergite", map[string]int64{"Vitric": 5, "Glazed": 10, "Lustrous": 15}},
+	{"Hemorphite", map[string]int64{"Vivid": 5, "Radiant": 10, "Scintillating": 15}},
+	{"Jaspet", map[string]int64{"Pure": 5, "Pristine": 10, "Immaculate": 15}},
+	{"Kernite", map[string]int64{"Luminous": 5, "Fiery": 10, "Resplendant": 15}},
+	{"Mercoxit", map[string]int64{"Magma": 5, "Vitreous": 10}},
+	{"Omber", map[string]int64{"Silvery": 5, "Golden": 10, "Platinoid": 15}},
+	{"Plagioclase", map[string]int64{"Azure": 5, "Rich": 10, "Sparkling": 15}},
+	{"Pyroxeres", map[string]int64{"Solid": 5, "Viscous": 10, "Opulent": 15}},
+	{"Scordite", map[string]int64{"Condensed": 5, "Massive": 10, "Glossy": 15}},
+	{"Spodumain", map[string]int64{"Bright": 5, "Gleaming": 10, "Dazzling": 15}},
+	{"Veldspar", map[string]int64{"Concentrated": 5, "Dense": 10, "Stable": 15}},
+	{"Bitumens",map[string]int64{"Brimful": 15, "Glistening": 100}},
+	{"Carnotite",map[string]int64{"Replete": 15, "Glowing": 100}},
+	{"Chromite",map[string]int64{"Lavish": 15, "Shimmering": 100}},
+	{"Cinnabar",map[string]int64{"Replete": 15, "Glowing": 100}},
+	{"Cobaltite",map[string]int64{"Copious": 15, "Twinkling": 100}},
+	{"Coesite",map[string]int64{"Brimful": 15, "Glistening": 100}},
+	{"Euxenite",map[string]int64{"Copious": 15, "Twinkling": 100}},
+	{"Loparite",map[string]int64{"Bountiful": 15, "Shining": 100}},
+	{"Monazite",map[string]int64{"Bountiful": 15, "Shining": 100}},
+	{"Otavite",map[string]int64{"Lavish": 15, "Shimmering": 100}},
+	{"Pollucite",map[string]int64{"Replete": 15, "Glowing": 100}},
+	{"Scheelite",map[string]int64{"Copious": 15, "Twinkling": 100}},
+	{"Sperrylite",map[string]int64{"Lavish": 15, "Shimmering": 100}},
+	{"Sylvite",map[string]int64{"Brimful": 15, "Glistening": 100}},
+	{"Titanite",map[string]int64{"Copious": 15, "Twinkling": 100}},
+	{"Vanadinite",map[string]int64{"Lavish": 15, "Shimmering": 100}},
+	{"Xenotime",map[string]int64{"Bountiful": 15, "Shining": 100}},
+	{"Ytterbite",map[string]int64{"Bountiful": 15, "Shining": 100}},
+	{"Zeolites",map[string]int64{"Brimful": 15, "Glistening": 100}},
+	{"Zircon",map[string]int64{"Replete": 15, "Glowing": 100}},	
+}
+
+func (app *App) GetAdjustedPriceForItem(market string, item AppraisalItem) (prices Prices) {
+	var prefix string
+
+	if strings.HasPrefix(item.Name, "Compressed") {
+		prefix = "Compressed "
+	}
+
+	for _, oreYield := range AllOreYields {
+		 if strings.HasSuffix(item.Name, oreYield.Name) {
+			 for adjective, modifier := range oreYield.Yields {
+				 if strings.Contains(item.Name, adjective) {
+				 	t, ok := app.TypeDB.GetType(prefix + oreYield.Name)
+				 	if ok {
+						prices, _ = app.PriceDB.GetPrice(market, t.ID)
+						prices = prices.Mul(1 + float64(modifier) / 100)
+						prices.Basis = fmt.Sprintf("%s%s +%d%%", prefix, oreYield.Name, modifier)
+						return
+					}
+				 }
+			 }
+		 }
+	}
+
 	prices, _ = app.PriceDB.GetPrice(market, item.TypeID)
-	return prices, nil
+	return
 }
 
 func (appraisal *Appraisal) OnlyCompressedOre() bool {
 	for _, item := range appraisal.Original.Items {
-		if !strings.HasPrefix(item.Name,"Compressed") { // NOTE: this might allow more than ore through...
+		if !strings.HasPrefix(item.Name, "Compressed") { // NOTE: this might allow more than ore through...
 			return false
 		}
 	}
@@ -542,7 +608,7 @@ func parserResultToAppraisalItems(result parsers.ParserResult) []AppraisalItem {
 		}
 	}
 
-	itemMap		:= make(map[string]AppraisalItem)
+	itemMap := make(map[string]AppraisalItem)
 	quantityMap := make(map[string]int64)
 	for _, item := range items {
 		item.Name = strings.Trim(item.Name, " \t")
