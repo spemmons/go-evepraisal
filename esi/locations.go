@@ -46,21 +46,29 @@ func (of *OauthFetcher) FindLocation(locationID int64) (int64, string, bool) {
 		return structure.SystemID, structure.Name, true
 	}
 
+	fmt.Printf("UNEXPECTED ERROR - Unable to find location: %d\n", locationID)
 	return 0, "", false
 }
 
 func (of *OauthFetcher) FindRegionForSystemID(systemID int64) (int64, bool) {
 	system, found := of.getUniverseSystem(systemID)
 	if !found {
+		fmt.Printf("UNEXPECTED ERROR - System not found: %d\n", systemID)
 		return 0, false
 	}
 
 	constellation, found := of.getUniverseConstellation(system.ConstellationID)
 	if !found {
+		fmt.Printf("UNEXPECTED ERROR - System %s constellation not found: %d\n", system.Name, system.ConstellationID)
 		return 0, false
 	}
 
-	return constellation.RegionID, constellation.RegionID != 0
+	if constellation.RegionID == 0 {
+		fmt.Printf("UNEXPECTED ERROR - Constellation %s region not found: %d\n", constellation.Name, system.ConstellationID)
+		return 0, false
+	}
+
+	return constellation.RegionID, true
 }
 
 var constellationMap = map[int64]*UniverseConstellation{}
