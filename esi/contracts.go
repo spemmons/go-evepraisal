@@ -2,6 +2,7 @@ package esi
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -219,6 +220,14 @@ func (of *OauthFetcher) validateContractItems(user *evepraisal.User, appraisal *
 			}
 		}
 	}
+
+	if len(errors) > 0 {
+		log.Printf("Invalid contract for appraisal %s\n", appraisal.ID)
+		for _, err := range errors {
+			log.Printf("- %s\n", err)
+		}
+	}
+
 	return
 }
 
