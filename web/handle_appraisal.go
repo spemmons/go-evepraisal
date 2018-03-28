@@ -270,7 +270,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 			case "valid":
 				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is VALID and ready for acceptance!\\nCharacter: *%s*\\nAmount: *%s* isk\\nVolume: *%s* m3\\nLocation: *%s*", status.Title, user.CharacterName, humanize.Commaf(appraisal.BuybackOffer()), humanize.Commaf(float64(int64(appraisal.Original.Totals.Volume))), status.Contract.LocationName))
 			case "invalid":
-				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is INVALID and should be rejected!", status.Title))
+				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ is INVALID and should be rejected! REASONS: %s", status.Title, errorString(status.Errors)))
 			case "deleted":
 				discord.PostMessage(fmt.Sprintf("@here Contract __%s__ was DELETED and can be forgotten!", status.Title))
 			}
@@ -286,6 +286,14 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 			ShowFull:  r.FormValue("full") != "",
 			IsOwner:   isOwner,
 		})
+}
+
+func errorString(errors []string) (result string) {
+	result = ""
+	for _, err := range(errors) {
+		result = result + "\\n - " + err
+	}
+	return
 }
 
 // HandleDeleteAppraisal is the handler for POST /a/delete/[id]
