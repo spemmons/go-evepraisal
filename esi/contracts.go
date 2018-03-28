@@ -102,7 +102,6 @@ func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepr
 		contract = of.findMatchingContract(appraisal.ID, contracts)
 		if contract != nil {
 			summary = contract.Status
-			title = contract.Title
 
 			errors = of.validateContract(user, appraisal, contract)
 
@@ -137,7 +136,7 @@ func (of *OauthFetcher) validateContract(user *evepraisal.User, appraisal *evepr
 
 	title := of.BuybackTitle(user, appraisal.ID)
 	if contract.Title != title {
-		errors = append(errors, fmt.Sprintf("Contract title does not exactly match '%s'", title))
+		errors = append(errors, fmt.Sprintf("Contract title '%s' should be '%s'", contract.Title, title))
 	}
 	if contract.Type != "item_exchange" {
 		errors = append(errors, "Contract Type must be an 'Item Exchange'")
