@@ -9,6 +9,7 @@ import (
 	"github.com/evepraisal/go-evepraisal"
 	"github.com/dustin/go-humanize"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 const ValidAssignee = 98497376      // NOTE: ID for 0.0 Massive Production
@@ -98,7 +99,7 @@ func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepr
 
 	var contract *Contract
 	if summary != "invalid" {
-		contract = of.findMatchingContract(title, contracts)
+		contract = of.findMatchingContract(appraisal.ID, contracts)
 		if contract != nil {
 			summary = contract.Status
 
@@ -117,9 +118,9 @@ func (of *OauthFetcher) EvaluateContract(user *evepraisal.User, appraisal *evepr
 	return &ContractStatus{title, summary, contract, errors}
 }
 
-func (of *OauthFetcher) findMatchingContract(title string, contracts []Contract) *Contract {
+func (of *OauthFetcher) findMatchingContract(appraisalID string, contracts []Contract) *Contract {
 	for _, contract := range contracts {
-		if contract.Title == title {
+		if strings.Contains(contract.Title, appraisalID) {
 			return &contract
 		}
 	}
@@ -133,6 +134,10 @@ func (of *OauthFetcher) BuybackTitle(user *evepraisal.User, appraisalID string) 
 func (of *OauthFetcher) validateContract(user *evepraisal.User, appraisal *evepraisal.Appraisal, contract *Contract) (errors []string) {
 	errors = []string{}
 
+	title := of.BuybackTitle(user, appraisal.ID)
+	if contract.Title != title {
+		errors = append(errors, "Contract title does not exactly match '%s'", title)
+	}
 	if contract.Type != "item_exchange" {
 		errors = append(errors, "Contract Type must be an 'Item Exchange'")
 	}
