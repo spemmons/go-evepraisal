@@ -124,7 +124,7 @@ func (ctx *Context) HTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 	setCacheHeaders := func(h http.Handler) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Cache-Control", "public, max-age=3600")
+			//w.Header().Add("Cache-Control", "public, max-age=3600")
 			etag, ok := ctx.etags[r.RequestURI]
 			if ok {
 				w.Header().Add("Etag", etag)
