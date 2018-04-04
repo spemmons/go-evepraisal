@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/mash/go-accesslog"
 	"github.com/newrelic/go-agent"
+	"time"
 )
 
 // HandleIndex is the handler for /
@@ -148,6 +149,8 @@ func (ctx *Context) HTTPHandler() http.Handler {
 	alogger := accessLogger{}
 	userLoggerInjectHandler := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			startTime := time.Now()
+
 			user := ctx.GetCurrentUser(r)
 			if user != nil {
 				r.Header.Set("logged-in-user", user.CharacterName)
@@ -156,6 +159,9 @@ func (ctx *Context) HTTPHandler() http.Handler {
 			}
 
 			next.ServeHTTP(w, r)
+
+			duration := time.Now().Sub(startTime)
+			log.Printf("Request %s duration: %v\n", r.RequestURI, duration)
 		})
 	}
 
