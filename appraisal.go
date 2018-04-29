@@ -306,10 +306,16 @@ func (app *App) PricesForItem(market string, item AppraisalItem) (Prices, error)
 		manufacturedPrices = manufacturedPrices.Mul(0.91)
 		// prices := marketPrices.Sub(manufacturedPrices).Mul(float64(item.Extra.BPCRuns))
 
-		log.Println("BPC Name: ", item.TypeName)
-		log.Println("BPC materials:", manufacturedPrices)
-		log.Println("BPC item value:", marketPrices)
-		log.Println("BPC price (1 run):", marketPrices.Sub(manufacturedPrices))
+		// log.Println("BPC Name: ", item.TypeName)
+		// log.Println("BPC materials:", manufacturedPrices)
+		// log.Println("BPC item value:", marketPrices)
+		log.Printf("BPC price for %s: %v, Item price: %v", tName, marketPrices.Sub(manufacturedPrices), marketPrices)
+
+		// bpcPrice := marketPrices.Sub(manufacturedPrices)
+		// if bpcPrice.Sell.Min > 0 && bpcPrice.Buy.Max > 0 {
+		// 	return bpcPrice, nil
+		// }
+
 		return Prices{}, nil
 		// return prices, nil
 	}
@@ -539,6 +545,10 @@ func parserResultToAppraisalItems(result parsers.ParserResult) []AppraisalItem {
 	case *parsers.HeuristicResult:
 		for _, item := range r.Items {
 			items = append(items, AppraisalItem{Name: item.Name, Quantity: item.Quantity})
+		}
+	case *parsers.Compare:
+		for _, item := range r.Items {
+			items = append(items, AppraisalItem{Name: item.Name, Quantity: 1})
 		}
 	}
 

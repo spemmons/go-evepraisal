@@ -6,7 +6,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title pull-left" id="delete-appraisal-modal-label">Delete this appraisal?</h5>
+        <h5 class="modal-title float-left" id="delete-appraisal-modal-label">Delete this appraisal?</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -29,7 +29,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title pull-left" id="permalink-modal-label">Permanent Link</h5>
+        <h5 class="modal-title float-left" id="permalink-modal-label">Permanent Link</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -68,24 +68,31 @@
 
     {{if eq .Page.Appraisal.Kind "heuristic"}}
     <div class="alert alert-danger" role="alert">
-    <strong>The heuristic parser was used to parse this result.</strong> This means that the format of the data you entered is unknown to Evepraisal and some guess-work was used to bring you the results below. Review closely for accuracy. If you think this is a format worth adding, <a href="https://github.com/evepraisal/go-evepraisal/issues/new?title=Unknown+Format&body=Appraisal+with+the+format:+{{.UI.BaseURLWithoutScheme}}/a/{{.Page.Appraisal.ID}}%0A%0A[Describe+the+format]" target="_blank">submit an issue on github</a>.
+    <strong>The heuristic parser was used to parse this result.</strong> This means that the format of the data you entered is unknown to Evepraisal and some guess-work was used to bring you the results below. Review closely for accuracy. If you think this is a format worth adding, <a href="https://github.com/evepraisal/go-evepraisal/issues/new?title=Unknown+Format&body=Appraisal+with+the+format:+{{.UI.BaseURLWithoutScheme}}/a/{{.Page.Appraisal.ID}}%0A%0ADescribe+the+format+(where+you+got+it,+etc)" target="_blank">submit an issue on github</a>.
     </div>
     {{end}}
 
     {{if ne .Page.Appraisal.ID ""}}
-    <div class="pull-right appraisal-options">
-      <a role="button" class="btn btn-primary btn-xs" type="button" href="#permalink-modal" data-toggle="modal" data-target="#permalink-modal"><span class="glyphicon glyphicon-bookmark"></span>  Permalink</a></button>
-      {{if not .Page.Appraisal.Live}}
-        <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | liveAppraisalLink}}"><span class="glyphicon glyphicon-record"></span> Live Prices</a></button>
-      {{else}}
-        <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | normalAppraisalLink}}"><span class="glyphicon glyphicon-time"></span> Frozen Prices</a></button>
-      {{end}}
-      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | rawAppraisalLink}}" target="_blank"><span class="glyphicon glyphicon-align-justify"></span> Raw</a></button>
-      <a role="button" class="btn btn-default btn-xs" type="button" href="{{.Page.Appraisal | jsonAppraisalLink}}" target="_blank"><span class="glyphicon glyphicon-chevron-right"></span> JSON</a></button>
+    <div class="appraisal-options float-right">
+      <div class="btn-group" role="group" aria-label="controls">
+        <a role="button" class="btn btn-primary btn-sm" href="#permalink-modal" data-toggle="modal" data-target="#permalink-modal"><span class="fas fa-bookmark"></span>  Permalink</a>
+        {{if not .Page.Appraisal.Live}}
+          <a role="button" class="btn btn-secondary btn-sm" href="{{.Page.Appraisal | liveAppraisalLink}}"><span class="fas fa-dot-circle"></span> Live Prices</a>
+        {{else}}
+          <a role="button" class="btn btn-secondary btn-sm" href="{{.Page.Appraisal | normalAppraisalLink}}"><span class="fas fa-history"></span> Frozen Prices</a></button>
+        {{end}}
+        <span class="dropdown">
+          <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="exportDropdownMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export</button>
+          <div class="dropdown-menu" aria-labelledby="exportDropdownMenu">
+            <a class="dropdown-item" href="{{.Page.Appraisal | rawAppraisalLink}}" target="_blank"><span class="fas fa-align-justify"></span> Raw</a>
+            <a class="dropdown-item" href="{{.Page.Appraisal | jsonAppraisalLink}}" target="_blank"><span class="fas fa-chevron-right"></span> JSON</a>
+          </div>
+        </span>
 
-      {{if .Page.IsOwner}}
-      <a role="button" class="btn btn-danger btn-xs" type="button" href="#delete-appraisal-modal" data-toggle="modal" data-target="#delete-appraisal-modal"><span class="glyphicon glyphicon-trash"></span> Delete</a></button>
-      {{end}}
+        {{if .Page.IsOwner}}
+        <a role="button" class="btn btn-danger btn-sm" href="#delete-appraisal-modal" data-toggle="modal" data-target="#delete-appraisal-modal"><span class="fas fa-trash"></span> Delete</a></button>
+        {{end}}
+      </div>
     </div>
     {{end}}
 
@@ -96,21 +103,21 @@
           {{.Page.Appraisal.Kind}}
         </strong>
         priced {{if .Page.Appraisal.UsingPercentage}}
-         at <strong><span class="text-warning">{{.Page.Appraisal.PricePercentage}}%</span></strong> of
+         at <strong><span class="text-warning">{{.Page.Appraisal.PricePercentage}}%</span></strong> of <strong>{{.Page.Appraisal.MarketName}}</strong>
         {{else}}
          in <strong>{{.Page.Appraisal.MarketName}}</strong>
         {{end}}
         {{relativetime .Page.Appraisal.CreatedTime}}
       </span>
       <div>
-        <h4>
+        <h5>
           <span class="nowrap">{{ prettybignumber .Page.Appraisal.Totals.Sell }} <small>estimated sell value</small></span>
           <span class="nowrap">{{ prettybignumber .Page.Appraisal.Totals.Buy }} <small>estimated buy value</small></span>
-        </h4>
+        </h5>
       </div>
     </div>
 
-    <table id="results" class="table table-sm table-condensed table-striped results-table">
+    <table id="results" class="table table-condensed table-striped results-table">
       <thead>
         <tr class="header">
           <th class="text-center">Qty</th>
@@ -124,20 +131,21 @@
       <tbody>
       {{range $i, $item := .Page.Appraisal.Items}}
       {{ if (or $.Page.ShowFull (lt $i 100)) }}
-        <tr class="{{if eq $item.TypeID 0}}danger{{else if eq $item.Prices.All.Volume 0}}info{{end}}">
-          <td class="numeric-cell text-center" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
-          <td>
+        <tr class="{{if eq $item.TypeID 0}}table-danger{{else if eq $item.Prices.All.Volume 0}}table-info{{else if $item.Extra.BPC}}table-info{{end}}">
+          <td class="numeric-cell text-center align-middle" data-sort-value="-{{$item.Quantity}}">{{comma $item.Quantity}}</td>
+          <td class="align-middle">
             {{if (and $item.TypeName (lt $i 30))}}
             <a href="/item/{{$item.TypeID}}">
-              <img class="pull-left media-object" src="https://image.eveonline.com/Type/{{$item.TypeID}}_32.png" alt="{{$item.TypeName}}">
+              <img class="float-left media-object" src="https://image.eveonline.com/Type/{{$item.TypeID}}_32.png" alt="{{$item.TypeName}}">
             </a>
             &nbsp;
             {{end}}
-            <a href="/item/{{$item.TypeID}}">
-              {{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)</a>
-              <span class="badge badge-default">Runs: {{$item.Extra.BPCRuns}}</span>{{end}}
+            <a href="/item/{{$item.TypeID}}" class="text-light">
+              <strong>{{if $item.TypeName}}{{$item.TypeName}}{{else}}{{$item.Name}}{{end}}{{if $item.Extra.BPC}} (Copy)</a>
+              <span class="badge badge-primary">Runs: {{$item.Extra.BPCRuns}}</span>{{else}}</a>{{end}}
+              </strong>
           </td>
-          <td class="numeric-cell text-right" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
+          <td class="numeric-cell text-right align-middle" data-sort-value="-{{$item.TypeVolume | printf "%f"}}">{{humanizeVolume $item.TypeVolume }}</td>
           <td class="numeric-cell text-right" data-sort-value="-{{$item.SingleRepresentativePrice | printf "%f"}}">
             {{commaf $item.Prices.Sell.Min}}<br />
             {{commaf $item.Prices.Buy.Max}}</td>
@@ -153,9 +161,14 @@
       {{end}}
       </tbody>
       <tfoot>
-        {{if (and (not $.Page.ShowFull) (ge (len .Page.Appraisal.Items) 100))}}
+        {{if (and (not $.Page.Appraisal.ID) (ge (len .Page.Appraisal.Items) 100))}}
         <tr>
-          <td class="text-center bg-warning text-white" colspan="6">There are too many results to show. <a href="/a/{{.Page.Appraisal.ID}}?full=true">Click here to see all <strong>{{.Page.Appraisal.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
+          <td class="text-center bg-dark text-white" colspan="6">There are too many results to on one page.</td>
+        </tr>
+        {{end}}
+        {{if (and $.Page.Appraisal.ID (not $.Page.ShowFull) (ge (len .Page.Appraisal.Items) 100))}}
+        <tr>
+          <td class="text-center bg-dark text-white" colspan="6">There are too many results to show. <a href="/a/{{.Page.Appraisal.ID}}?full=true" class="alert-link">Click here to see all <strong>{{.Page.Appraisal.Items | len }}</strong> results.</a> Warning: The page might be slow.</td>
         </tr>
         {{end}}
         <tr>

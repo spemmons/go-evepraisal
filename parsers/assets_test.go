@@ -90,7 +90,40 @@ Sleeper Data Library	1.080`,
 		`Robotics	741	Specialized Commodities			4 446 m3	76 705 081,83 ISK`,
 		&AssetList{
 			Items: []AssetItem{
-				{Name: "Robotics", Quantity: 741, Group: "Specialized Commodities"},
+				{Name: "Robotics", Quantity: 741, Group: "Specialized Commodities", PriceEstimate: 76705081.83, Volume: 4446},
+			},
+			lines: []int{0},
+		},
+		Input{},
+		false,
+	}, {
+		"With 'spaces' in numbers",
+		`Guardian Angels 'Advanced' Cerebral Accelerator	1	Booster		10	1 m3	37 805 997.92 ISK`,
+		&AssetList{
+			Items: []AssetItem{
+				{Name: "Guardian Angels 'Advanced' Cerebral Accelerator", Quantity: 1, Group: "Booster", Slot: "10", Volume: 1.0, PriceEstimate: 37805997.92},
+			},
+			lines: []int{0},
+		},
+		Input{},
+		false,
+	}, {
+		"With 'spaces' in numbers 2",
+		"Mexallon\t1\u00a0667\u00a0487\tMineral\t\t\t16\u00a0674,87 m3\t128\u00a0696\u00a0646,66 ISK",
+		&AssetList{
+			Items: []AssetItem{
+				{Name: "Mexallon", Quantity: 1667487, Group: "Mineral", Volume: 16674.87, PriceEstimate: 128696646.66},
+			},
+			lines: []int{0},
+		},
+		Input{},
+		false,
+	}, {
+		"m^3",
+		"Evaporite Deposits	1 452	Moon Materials			72,60 м^3	7 533 164,76 ISK",
+		&AssetList{
+			Items: []AssetItem{
+				{Name: "Evaporite Deposits", Quantity: 1452, Group: "Moon Materials", Volume: 72.60, PriceEstimate: 7533164.76},
 			},
 			lines: []int{0},
 		},

@@ -21,6 +21,7 @@ import (
 	"github.com/evepraisal/go-evepraisal/legacy"
 	"github.com/evepraisal/go-evepraisal/parsers"
 	"github.com/go-zoo/bone"
+	"github.com/mssola/user_agent"
 )
 
 var (
@@ -30,6 +31,8 @@ var (
 	formatJSON  = "json"
 	formatRaw   = "raw"
 	formatDebug = "debug"
+
+	appraisalBodySizeLimit = int64(20 * 1000)
 )
 
 // AppraisalPage contains data used on the appraisal page
@@ -105,24 +108,56 @@ func jsonAppraisalLink(appraisal *evepraisal.Appraisal) string {
 	return u.String()
 }
 
+func isMultiPart(r *http.Request) bool {
+	return strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data")
+}
+
+func isURLEncodedFormData(r *http.Request) bool {
+	return r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+}
+
+func getRequestParam(r *http.Request, name string) string {
+	if isMultiPart(r) || isURLEncodedFormData(r) {
+		v := r.FormValue(name)
+		if v != "" {
+			return v
+		}
+		return r.URL.Query().Get(name)
+	}
+	return r.URL.Query().Get(name)
+}
+
 func parseAppraisalBody(r *http.Request) (string, error) {
 	// Parse body
-	r.ParseMultipartForm(20 * 1000)
+	var (
+		f    io.ReadCloser
+		err  error
+		body string
+	)
 
-	var body string
-	f, _, err := r.FormFile("uploadappraisal")
-	if err == http.ErrNotMultipart || err == http.ErrMissingFile {
-		body = r.FormValue("raw_textarea")
-	} else if err != nil {
-		return "", err
+	if isMultiPart(r) || isURLEncodedFormData(r) {
+		r.ParseMultipartForm(appraisalBodySizeLimit)
+		f, _, err = r.FormFile("uploadappraisal")
+		if err != nil && err != http.ErrNotMultipart && err != http.ErrMissingFile {
+			return "", err
+		}
 	} else {
-		defer f.Close()
-		bodyBytes, err := ioutil.ReadAll(f)
+		f = r.Body
+	}
+
+	if f != nil {
+		bodyBytes, err := ioutil.ReadAll(io.LimitReader(f, appraisalBodySizeLimit))
 		if err != nil {
 			return "", err
 		}
 		body = string(bodyBytes)
+		defer f.Close()
 	}
+
+	if body == "" {
+		body = getRequestParam(r, "raw_textarea")
+	}
+
 	if len(body) > 200000 {
 		return "", errInputTooBig
 	}
@@ -136,19 +171,20 @@ func parseAppraisalBody(r *http.Request) (string, error) {
 // HandleAppraisal is the handler for POST /appraisal
 func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
-	persist := r.FormValue("persist") != "no"
+	body, err := parseAppraisalBody(r)
+	if err != nil {
+		ctx.renderErrorPage(r, w, http.StatusBadRequest, "Invalid input", err.Error())
+		return
+	}
+
+	persist := getRequestParam(r, "persist") != "no"
 	pricePercentageStr := "100"
-	if r.FormValue("price_percentage") != "" {
-		pricePercentageStr = r.FormValue("price_percentage")
+	if getRequestParam(r, "price_percentage") != "" {
+		pricePercentageStr = getRequestParam(r, "price_percentage")
 	}
 	pricePercentage, err := strconv.ParseFloat(pricePercentageStr, 64)
 	if err != nil || pricePercentage <= 0 || pricePercentage > 1000 {
 		ctx.renderErrorPage(r, w, http.StatusBadRequest, "Invalid price_percentage value", err.Error())
-	}
-
-	body, err := parseAppraisalBody(r)
-	if err != nil {
-		ctx.renderErrorPage(r, w, http.StatusBadRequest, "Invalid input", err.Error())
 		return
 	}
 
@@ -156,7 +192,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 	errorRoot.UI.RawTextAreaDefault = body
 
 	// Parse Market
-	market := r.FormValue("market")
+	market := getRequestParam(r, "market")
 
 	// Legacy Market ID
 	marketID, err := strconv.ParseInt(market, 10, 64)
@@ -190,7 +226,7 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 
 	user := ctx.GetCurrentUser(r)
 
-	visibility := r.FormValue("visibility")
+	visibility := getRequestParam(r, "visibility")
 	private := false
 	if visibility == "private" && user != nil {
 		private = true
@@ -220,6 +256,8 @@ func (ctx *Context) HandleAppraisal(w http.ResponseWriter, r *http.Request) {
 			ctx.renderServerErrorWithRoot(r, w, err, errorRoot)
 			return
 		}
+	} else {
+		go ctx.App.AppraisalDB.IncrementTotalAppraisals()
 	}
 
 	// Log for later analyics
@@ -261,7 +299,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		appraisalID = evepraisal.Uint64ToAppraisalID(legacyAppraisalID) + suffix
 	}
 
-	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID)
+	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID, !user_agent.New(r.UserAgent()).Bot())
 	if err == evepraisal.ErrAppraisalNotFound {
 		ctx.renderErrorPage(r, w, http.StatusNotFound, "Not Found", "I couldn't find what you're looking for")
 		return
@@ -284,7 +322,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	appraisal.Live = r.FormValue("live") == "yes"
+	appraisal.Live = getRequestParam(r, "live") == "yes"
 	if appraisal.Live {
 		ctx.App.PopulateItems(appraisal)
 		appraisal.Created = time.Now().Unix()
@@ -315,7 +353,7 @@ func (ctx *Context) HandleViewAppraisal(w http.ResponseWriter, r *http.Request) 
 	ctx.render(r, w, "appraisal.html",
 		AppraisalPage{
 			Appraisal: appraisal,
-			ShowFull:  r.FormValue("full") != "",
+			ShowFull:  getRequestParam(r, "full") != "",
 			IsOwner:   isOwner,
 		})
 }
@@ -359,7 +397,7 @@ func (ctx *Context) renderAppraisalDebug(w http.ResponseWriter, r *http.Request,
 // HandleDeleteAppraisal is the handler for POST /a/delete/[id]
 func (ctx *Context) HandleDeleteAppraisal(w http.ResponseWriter, r *http.Request) {
 	appraisalID := bone.GetValue(r, "appraisalID")
-	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID)
+	appraisal, err := ctx.App.AppraisalDB.GetAppraisal(appraisalID, false)
 	if err == evepraisal.ErrAppraisalNotFound {
 		ctx.renderErrorPage(r, w, http.StatusNotFound, "Not Found", "I couldn't find what you're looking for")
 		return

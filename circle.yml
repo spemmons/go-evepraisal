@@ -16,6 +16,7 @@ checkout:
 
 dependencies:
   pre:
+    - mkdir -p ${GOPATH}/bin
     - make setup
   override:
     - make dist

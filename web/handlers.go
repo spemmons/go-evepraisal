@@ -26,6 +26,13 @@ func (ctx *Context) HandleIndex(w http.ResponseWriter, r *http.Request) {
 	}{TotalAppraisalCount: total})
 }
 
+// HandleNewAppraisal is the handler for /new-appraisal
+func (ctx *Context) HandleNewAppraisal(w http.ResponseWriter, r *http.Request) {
+	ctx.render(r, w, "new-appraisal.html", struct {
+		ShowLargePastePanel bool `json:"show_large_paste_panel"`
+	}{ShowLargePastePanel: true})
+}
+
 // HandleLegal is the handler for /legal
 func (ctx *Context) HandleLegal(w http.ResponseWriter, r *http.Request) {
 	ctx.render(r, w, "legal.html", nil)
@@ -36,8 +43,8 @@ func (ctx *Context) HandleAbout(w http.ResponseWriter, r *http.Request) {
 	ctx.render(r, w, "about.html", nil)
 }
 
-// HandleAboutAPI is the handler for /about/api
-func (ctx *Context) HandleAboutAPI(w http.ResponseWriter, r *http.Request) {
+// HandleAPIDocs is the handler for /api-docs
+func (ctx *Context) HandleAPIDocs(w http.ResponseWriter, r *http.Request) {
 	ctx.render(r, w, "api.html", nil)
 }
 
@@ -71,6 +78,8 @@ func (ctx *Context) HTTPHandler() http.Handler {
 	router := bone.New()
 	router.GetFunc("/", ctx.HandleIndex)
 	router.PostFunc("/", ctx.HandleIndex)
+	router.GetFunc("/new-appraisal", ctx.HandleNewAppraisal)
+	router.GetFunc("/new-appraisal", ctx.HandleNewAppraisal)
 	router.GetFunc("/appraisal", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/", http.StatusTemporaryRedirect) })
 
 	// Create Appraisal
@@ -94,7 +103,8 @@ func (ctx *Context) HTTPHandler() http.Handler {
 	// Misc
 	router.GetFunc("/legal", ctx.HandleLegal)
 	router.GetFunc("/about", ctx.HandleAbout)
-	router.GetFunc("/about/api", ctx.HandleAboutAPI)
+	router.GetFunc("/api-docs", ctx.HandleAPIDocs)
+	router.GetFunc("/about/api", ctx.HandleAPIDocs)
 	router.GetFunc("/robots.txt", ctx.HandleRobots)
 	router.GetFunc("/favicon.ico", ctx.HandleFavicon)
 
@@ -120,20 +130,21 @@ func (ctx *Context) HTTPHandler() http.Handler {
 	}
 
 	mux := http.NewServeMux()
-	setCacheHeaders := func(h http.Handler) http.HandlerFunc {
+	setStaticHeaders := func(h http.Handler) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Cache-Control", "public, max-age=3600")
 			etag, ok := ctx.etags[r.RequestURI]
 			if ok {
 				w.Header().Add("Etag", etag)
 			}
+
 			h.ServeHTTP(w, r)
 		}
 	}
 
 	// Route our bundled static files
 	var fs = &assetfs.AssetFS{Asset: Asset, AssetDir: AssetDir, AssetInfo: AssetInfo, Prefix: "/static/"}
-	mux.Handle("/static/", setCacheHeaders(http.StripPrefix("/static/", http.FileServer(fs))))
+	mux.Handle("/static/", setStaticHeaders(http.StripPrefix("/static/", http.FileServer(fs))))
 
 	// Mount our web app router to root
 	mux.Handle("/", router)

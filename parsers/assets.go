@@ -38,16 +38,16 @@ type AssetItem struct {
 }
 
 var reAssetList = regexp.MustCompile(strings.Join([]string{
-	`^([\S\ ]*)`,                           // Name
-	`\t([\d,'\.\ ]*)`,                      // Quantity
-	`(?:\t([\S ]*))?`,                      // Group
-	`(?:\t([\S ]*))?`,                      // Category
-	`(?:\t(XLarge|Large|Medium|Small|))?`,  // Size
-	`(?:\t(High|Medium|Low|Rigs|[\d ]*))?`, // Slot
-	`(?:\t([\d ,\.]*) m3)?`,                // Volume
-	`(?:\t([\d]+|))?`,                      // meta level
-	`(?:\t([\d]+|))?`,                      // tech level
-	`(?:\t([\d,'\.\ ]+) ISK)?$`,            // price estimate
+	`^([\S\ ]*)`,                                 // Name
+	`\t([` + bigNumberRegex + `*)`,               // Quantity
+	`(?:\t([\S ]*))?`,                            // Group
+	`(?:\t([\S ]*))?`,                            // Category
+	`(?:\t(XLarge|Large|Medium|Small|))?`,        // Size
+	`(?:\t(High|Medium|Low|Rigs|[\d ]*))?`,       // Slot
+	`(?:\t(` + bigNumberRegex + `*) (m3|м\^3))?`, // Volume
+	`(?:\t([\d]+|))?`,                            // meta level
+	`(?:\t([\d]+|))?`,                            // tech level
+	`(?:\t(` + bigNumberRegex + `+) ISK)?$`,      // price estimate
 }, ""))
 
 // ParseAssets will parse an asset listing
@@ -65,14 +65,14 @@ func ParseAssets(input Input) (ParserResult, Input) {
 			AssetItem{
 				Name:          CleanTypeName(match[1]),
 				Quantity:      qty,
-				Volume:        ToFloat64(match[7]),
 				Group:         match[3],
 				Category:      match[4],
 				Size:          match[5],
 				Slot:          match[6],
-				MetaLevel:     match[8],
-				TechLevel:     match[9],
-				PriceEstimate: ToFloat64(match[10]),
+				Volume:        ToFloat64(match[7]),
+				MetaLevel:     match[9],
+				TechLevel:     match[10],
+				PriceEstimate: ToFloat64(match[11]),
 			})
 	}
 	sort.Slice(assetList.Items, func(i, j int) bool {

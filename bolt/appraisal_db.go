@@ -45,9 +45,10 @@ func NewAppraisalDB(filename string) (evepraisal.AppraisalDB, error) {
 
 	err = db.Update(func(tx *bolt.Tx) error {
 		var b *bolt.Bucket
+		var totalAppraisals uint64
 		b, err = tx.CreateBucket([]byte("appraisals"))
 		if err == nil {
-			err = b.SetSequence(20000000)
+			err = b.SetSequence(0)
 			if err != nil {
 				return fmt.Errorf("set appraisal bucket sequence: %s", err)
 			}
@@ -55,6 +56,7 @@ func NewAppraisalDB(filename string) (evepraisal.AppraisalDB, error) {
 		} else if err != bolt.ErrBucketExists {
 			return err
 		}
+		totalAppraisals = tx.Bucket([]byte("appraisals")).Sequence()
 
 		_, err = tx.CreateBucket([]byte("appraisals-last-used"))
 		if err != nil && err != bolt.ErrBucketExists {
@@ -63,6 +65,15 @@ func NewAppraisalDB(filename string) (evepraisal.AppraisalDB, error) {
 
 		_, err = tx.CreateBucket([]byte("appraisals-by-user"))
 		if err != nil && err != bolt.ErrBucketExists {
+			return err
+		}
+
+		b, err = tx.CreateBucket([]byte("stats"))
+		if err == nil {
+			err = putTotalAppraisals(tx, totalAppraisals)
+			log.Printf("Stats bucket created at total_appraisals=%d", totalAppraisals)
+			return err
+		} else if err != bolt.ErrBucketExists {
 			return err
 		}
 
@@ -129,14 +140,15 @@ func (db *AppraisalDB) PutNewAppraisal(appraisal *evepraisal.Appraisal) error {
 		}
 		return nil
 	})
-	if err != nil {
+	if err == nil {
 		go db.setLastUsedTime(dbID)
+		go db.IncrementTotalAppraisals()
 	}
 	return err
 }
 
 // GetAppraisal returns the given appraisal by ID
-func (db *AppraisalDB) GetAppraisal(appraisalID string) (*evepraisal.Appraisal, error) {
+func (db *AppraisalDB) GetAppraisal(appraisalID string, updateUsedTime bool) (*evepraisal.Appraisal, error) {
 	appraisal, err := db.getAppraisal(appraisalID)
 	if err != nil {
 		return nil, err
@@ -146,7 +158,9 @@ func (db *AppraisalDB) GetAppraisal(appraisalID string) (*evepraisal.Appraisal, 
 	if err != nil {
 		return nil, err
 	}
-	go db.setLastUsedTime(dbID)
+	if updateUsedTime {
+		go db.setLastUsedTime(dbID)
+	}
 
 	return appraisal, err
 }
@@ -284,16 +298,36 @@ func (db *AppraisalDB) LatestAppraisalsByUser(user evepraisal.User, reqCount int
 	return appraisals, err
 }
 
+func readTotalAppraisals(tx *bolt.Tx) uint64 {
+	b := tx.Bucket([]byte("stats"))
+	return binary.BigEndian.Uint64(b.Get([]byte("total_appraisals")))
+}
+
+func putTotalAppraisals(tx *bolt.Tx, value uint64) error {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, value)
+	return tx.Bucket([]byte("stats")).Put([]byte("total_appraisals"), buf)
+}
+
 // TotalAppraisals returns the number of total appraisals
 func (db *AppraisalDB) TotalAppraisals() (int64, error) {
 	var total int64
 	err := db.DB.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte("appraisals"))
-		total = int64(b.Sequence())
+		total = int64(readTotalAppraisals(tx))
 		return nil
 	})
 
 	return total, err
+}
+
+// IncrementTotalAppraisals will increment to total appraisal count, useful to track non-persistent appraisals
+func (db *AppraisalDB) IncrementTotalAppraisals() error {
+	err := db.DB.Update(func(tx *bolt.Tx) error {
+		total := readTotalAppraisals(tx)
+		return putTotalAppraisals(tx, total+1)
+	})
+
+	return err
 }
 
 // DeleteAppraisal deletes an appraisal by ID
@@ -366,6 +400,13 @@ func (db *AppraisalDB) startReaper() {
 			c := b.Cursor()
 			for key, val := c.First(); key != nil; key, val = c.Next() {
 				appraisalCount++
+				if appraisalCount%1000 == 0 {
+					select {
+					case <-db.stop:
+						return nil
+					default:
+					}
+				}
 
 				var timestamp time.Time
 				if val != nil {
@@ -390,7 +431,17 @@ func (db *AppraisalDB) startReaper() {
 			log.Printf("ERROR: Problem querying for unused appraisals: %s", err)
 		}
 
-		for _, appraisalID := range unused {
+		log.Printf("Reaper starting to delete %d appraisals", len(unused))
+
+		for i, appraisalID := range unused {
+			if i%100 == 0 {
+				select {
+				case <-db.stop:
+					return
+				default:
+				}
+			}
+
 			err = db.DeleteAppraisal(appraisalID)
 			if err != nil {
 				log.Printf("ERROR: Problem removing unused appraisals: %s", err)

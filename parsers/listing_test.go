@@ -96,5 +96,29 @@ Tritanium X 1`,
 		},
 		Input{},
 		false,
+	}, {
+		"quantities with a decimal, for some reason",
+		`123.12	Griffin
+456.3	Maulus`,
+		&Listing{
+			Items: []ListingItem{
+				{Name: "Griffin", Quantity: 123},
+				{Name: "Maulus", Quantity: 456},
+			},
+			lines: []int{0, 1},
+		},
+		Input{},
+		false,
+	}, {
+		"with ending whitespace",
+		`Compressed Iridescent Gneiss x 109 `,
+		&Listing{
+			Items: []ListingItem{
+				{Name: "Compressed Iridescent Gneiss", Quantity: 109},
+			},
+			lines: []int{0},
+		},
+		Input{},
+		false,
 	},
 }

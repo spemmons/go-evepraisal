@@ -1,13 +1,45 @@
 package parsers
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-var cleanIntegers = regexp.MustCompile(`[,\'\.\ ` + "\xc2\xa0" + `]`)
+var bigNumberRegex = `[\d,'\.\ ` + "\u00a0\xc2\xa0" + `]`
+var cleanIntegers = regexp.MustCompile(`[,\'\.\ ` + "\u00a0\xc2\xa0" + `]`)
+var separatorCharacters = map[rune]bool{
+	',':    true,
+	'.':    true,
+	' ':    true,
+	'\'':   true,
+	'\xc2': true,
+	'\xa0': true,
+}
+
+func splitDecimal(s string) (string, string) {
+	runes := []rune(s)
+	if len(runes) > 3 {
+		_, twodecimal := separatorCharacters[runes[len(runes)-3]]
+		if twodecimal {
+			whole := string(runes[0 : len(runes)-3])
+			decimal := string(runes[len(runes)-2:])
+			return whole, decimal
+		}
+	}
+	if len(runes) > 2 {
+		_, onedecimal := separatorCharacters[runes[len(runes)-2]]
+		if onedecimal {
+			whole := string(runes[0 : len(runes)-2])
+			decimal := string(runes[len(runes)-1:])
+			return whole, decimal
+		}
+	}
+
+	return s, ""
+}
 
 // ToInt parses a string into an integer. It will return 0 on failure
 func ToInt(s string) int64 {
@@ -15,21 +47,28 @@ func ToInt(s string) int64 {
 		return 0
 	}
 
-	s = cleanIntegers.ReplaceAllString(s, "")
+	whole, _ := splitDecimal(s)
+	cleaned := cleanIntegers.ReplaceAllString(whole, "")
 
-	i, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		return int64(ToFloat64(s))
+	i, err := strconv.ParseInt(cleaned, 10, 64)
+	if err == nil {
+		return i
 	}
-	return i
+
+	return 0
 }
 
 // ToFloat64 parses a string into a float64. It will return 0.0 on failure
 func ToFloat64(s string) float64 {
+	// Attempt to parse float as "normal"
 	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return 0.0
+	if err == nil {
+		return f
 	}
+
+	whole, decimal := splitDecimal(s)
+	f, _ = strconv.ParseFloat(fmt.Sprintf("%d.%s", ToInt(string(whole)), string(decimal)), 64)
+
 	return f
 }
 

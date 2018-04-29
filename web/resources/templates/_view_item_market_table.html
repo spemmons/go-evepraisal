@@ -1,6 +1,6 @@
 
-<div class="col-lg-6">
-  <table class="table">
+<div class="col-sm">
+  <table class="table table-condensed table-sm table-striped">
     <thead>
       <tr>
         <td class="text-center" colspan="5"><h5>{{comma .Prices.Sell.OrderCount}} Sell Orders / {{comma .Prices.Sell.Volume}} units</h5></td>
@@ -30,14 +30,14 @@
     </tbody>
     <tfoot>
       <tr>
-        <td class="text-center" colspan="5"><b>sell market-price = min(<em>sell order prices</em>)</b></td>
+        <td class="text-center" colspan="5"><b>sell market-price = min(<var>sell order prices</var>)</b></td>
       </tr>
     </tfoot>
   </table>
 </div>
 
-<div class="col-lg-6">
-  <table class="table">
+<div class="col-sm">
+  <table class="table table-condensed table-sm table-striped">
     <thead>
       <tr>
         <td class="text-center" colspan="5"><h5>{{comma .Prices.Buy.OrderCount}} Buy orders / {{comma .Prices.Buy.Volume}} units</h5></td>
@@ -67,7 +67,7 @@
     </tbody>
     <tfoot>
       <tr>
-        <td class="text-center" colspan="5"><b>buy market-price = max(<em>buy order prices</em>)</b></td>
+        <td class="text-center" colspan="5"><b>buy market-price = max(<var>buy order prices</var>)</b></td>
       </tr>
     </tfoot>
   </table>
