@@ -27,6 +27,8 @@ import (
 var (
 	errInputTooBig = errors.New("Input value is too big")
 	errInputEmpty  = errors.New("Input value is empty")
+
+	appraisalBodySizeLimit = int64(20 * 1000)
 )
 
 // AppraisalPage contains data used on the appraisal page
@@ -44,24 +46,56 @@ func appraisalLink(appraisal *evepraisal.Appraisal) string {
 	return fmt.Sprintf("/a/%s", appraisal.ID)
 }
 
+func isMultiPart(r *http.Request) bool {
+	return strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data")
+}
+
+func isURLEncodedFormData(r *http.Request) bool {
+	return r.Header.Get("Content-Type") == "application/x-www-form-urlencoded"
+}
+
+func getRequestParam(r *http.Request, name string) string {
+	if isMultiPart(r) || isURLEncodedFormData(r) {
+		v := r.FormValue(name)
+		if v != "" {
+			return v
+		}
+		return r.URL.Query().Get(name)
+	}
+	return r.URL.Query().Get(name)
+}
+
 func parseAppraisalBody(r *http.Request) (string, error) {
 	// Parse body
-	r.ParseMultipartForm(20 * 1000)
+	var (
+		f    io.ReadCloser
+		err  error
+		body string
+	)
 
-	var body string
-	f, _, err := r.FormFile("uploadappraisal")
-	if err == http.ErrNotMultipart || err == http.ErrMissingFile {
-		body = r.FormValue("raw_textarea")
-	} else if err != nil {
-		return "", err
+	if isMultiPart(r) || isURLEncodedFormData(r) {
+		r.ParseMultipartForm(appraisalBodySizeLimit)
+		f, _, err = r.FormFile("uploadappraisal")
+		if err != nil && err != http.ErrNotMultipart && err != http.ErrMissingFile {
+			return "", err
+		}
 	} else {
-		defer f.Close()
-		bodyBytes, err := ioutil.ReadAll(f)
+		f = r.Body
+	}
+
+	if f != nil {
+		bodyBytes, err := ioutil.ReadAll(io.LimitReader(f, appraisalBodySizeLimit))
 		if err != nil {
 			return "", err
 		}
 		body = string(bodyBytes)
+		defer f.Close()
 	}
+
+	if body == "" {
+		body = getRequestParam(r, "raw_textarea")
+	}
+
 	if len(body) > 200000 {
 		return "", errInputTooBig
 	}
